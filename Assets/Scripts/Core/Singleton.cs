@@ -15,6 +15,7 @@ namespace FortressClash.Core
             else
             {
                 Instance = this as T;
+                DontDestroyOnLoad(this.gameObject);
             }
         }
     }
