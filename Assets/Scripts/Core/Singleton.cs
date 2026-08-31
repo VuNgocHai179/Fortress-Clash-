@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace BuckshotMobile.Core
+namespace FortressClash.Core
 {
     public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
     {
@@ -15,6 +15,7 @@ namespace BuckshotMobile.Core
             else
             {
                 Instance = this as T;
+                DontDestroyOnLoad(this.gameObject);
             }
         }
     }
