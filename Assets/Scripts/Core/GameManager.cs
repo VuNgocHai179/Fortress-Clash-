@@ -3,6 +3,13 @@ using UnityEngine;
 
 public class GameManager : Singleton<GameManager>
 {
+
+    public GameObject BlueGate;
+
+    public GameObject RedGate;
+
+    public GameObject Sword;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -18,6 +25,9 @@ public class GameManager : Singleton<GameManager>
     public void SwordChoosen()
     {
         Debug.Log("SwordChoosen");
+        GameObject SwordSpawn = Instantiate(Sword, BlueGate.transform.position,Quaternion.identity);
+        SwordSpawn.GetComponent<Soldier>().Destination = RedGate.transform.position;
+        SwordSpawn.GetComponent<Soldier>().SpawnPosition = BlueGate.transform.position; 
     }
 
     public void ArcherChoosen()
