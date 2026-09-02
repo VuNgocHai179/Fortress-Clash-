@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 9208974215750063592}
   - component: {fileID: 2218259829254655681}
   - component: {fileID: -8468518892557145717}
+  - component: {fileID: 1326357908094938239}
   m_Layer: 0
   m_Name: Sword
   m_TagString: Untagged
@@ -102,10 +103,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 79bc816599ce91f45b5241aa4d613125, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Velocity: 1
+  Velocity: 3
   BlueSide: 1
   Destination: {x: 0, y: 0}
   SpawnPosition: {x: 0, y: 0}
+  AttackRange: 1.5
 --- !u!50 &2218259829254655681
 Rigidbody2D:
   serializedVersion: 5
@@ -203,3 +205,25 @@ PolygonCollider2D:
       - {x: 0.39499998, y: -0.33499998}
       - {x: 0.45499998, y: -0.205}
   m_UseDelaunayMesh: 0
+--- !u!95 &1326357908094938239
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1348272604327182895}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 1c1ab4dbad2bc954d8eef07265bd9224, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
