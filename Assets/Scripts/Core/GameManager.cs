@@ -10,6 +10,8 @@ public class GameManager : Singleton<GameManager>
 
     public GameObject Sword;
 
+    public int Money;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -20,6 +22,18 @@ public class GameManager : Singleton<GameManager>
     void Update()
     {
         
+    }
+
+    public void spentMoney(int money)
+    {
+        if(money <= Money)
+        {
+            Money = Money - money;
+        }
+        else
+        {
+            Debug.Log("khong du dui ga");
+        }
     }
 
     public void SwordChoosen()

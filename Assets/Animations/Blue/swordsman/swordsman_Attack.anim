@@ -31,7 +31,7 @@ AnimationClip:
     - time: 0.8
       value: {fileID: -7689671385043696565, guid: 52faec4ccc34ef64b9d082f505adb24e, type: 3}
     - time: 1
-      value: {fileID: -7094164551131007286, guid: 52faec4ccc34ef64b9d082f505adb24e, type: 3}
+      value: {fileID: -4291930625038005619, guid: 52faec4ccc34ef64b9d082f505adb24e, type: 3}
     attribute: m_Sprite
     path: 
     classID: 212
@@ -59,7 +59,7 @@ AnimationClip:
     - {fileID: 3681329378449348484, guid: 52faec4ccc34ef64b9d082f505adb24e, type: 3}
     - {fileID: -787485528536686554, guid: 52faec4ccc34ef64b9d082f505adb24e, type: 3}
     - {fileID: -7689671385043696565, guid: 52faec4ccc34ef64b9d082f505adb24e, type: 3}
-    - {fileID: -7094164551131007286, guid: 52faec4ccc34ef64b9d082f505adb24e, type: 3}
+    - {fileID: -4291930625038005619, guid: 52faec4ccc34ef64b9d082f505adb24e, type: 3}
   m_AnimationClipSettings:
     serializedVersion: 2
     m_AdditiveReferencePoseClip: {fileID: 0}
@@ -85,7 +85,7 @@ AnimationClip:
   m_HasGenericRootTransform: 0
   m_HasMotionFloatCurves: 0
   m_Events:
-  - time: 0
+  - time: 1
     functionName: AttackAnimationFinished
     data: 
     objectReferenceParameter: {fileID: 1348272604327182895, guid: bcef0755a0de6094f88816ff7809b9a6, type: 3}

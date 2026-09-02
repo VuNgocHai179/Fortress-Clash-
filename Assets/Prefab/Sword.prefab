@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 1326357908094938239}
   m_Layer: 0
   m_Name: Sword
-  m_TagString: Untagged
+  m_TagString: ally
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -108,6 +108,8 @@ MonoBehaviour:
   Destination: {x: 0, y: 0}
   SpawnPosition: {x: 0, y: 0}
   AttackRange: 1.5
+  Health: 40
+  Damage: 10
 --- !u!50 &2218259829254655681
 Rigidbody2D:
   serializedVersion: 5

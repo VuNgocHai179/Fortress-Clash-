@@ -13,11 +13,20 @@ public class Soldier : MonoBehaviour
 
     public float AttackRange = 1.5f;
 
+    public int Health;
+
+    public int Damage;
+
+    public int Price;
+
     private GameObject target;
 
     private bool isAttacking;
     private bool canMove = true;
     private bool pendingStopAttack;
+
+    // Ally đang đứng trước mặt và chặn đường
+    private bool blockedByAlly;
 
     private Animator animator;
 
@@ -53,12 +62,25 @@ public class Soldier : MonoBehaviour
 
         FindTarget();
 
+        // Có enemy trong tầm
         if (target != null)
         {
             StartAttack();
+            return;
         }
-        else if (canMove)
+
+        // Có ally phía trước
+        if (blockedByAlly)
         {
+            // Đứng yên
+            Velocity = 0f;
+            return;
+        }
+
+        // Không có enemy hoặc ally
+        if (canMove)
+        {
+            Velocity = baseSpeed;
             MoveToDestination();
         }
     }
@@ -69,7 +91,6 @@ public class Soldier : MonoBehaviour
         if (t == null)
             return false;
 
-        // Kiểm tra object có thực sự tồn tại hay không
         if (!t.activeInHierarchy)
             return false;
 
@@ -122,26 +143,61 @@ public class Soldier : MonoBehaviour
 
 
     private void FindTarget()
+{
+    Collider2D[] hits = Physics2D.OverlapCircleAll(
+        transform.position,
+        AttackRange
+    );
+
+    target = null;
+    blockedByAlly = false;
+
+    // Hướng soldier đang di chuyển
+    Vector2 moveDirection = (Destination - (Vector2)transform.position).normalized;
+
+    // Nếu đã gần Destination thì không cần xét hướng
+    if (moveDirection == Vector2.zero)
     {
-        Collider2D[] hits = Physics2D.OverlapCircleAll(
-            transform.position,
-            AttackRange
-        );
+        moveDirection = Vector2.right;
+    }
 
-        target = null;
+    foreach (Collider2D col in hits)
+    {
+        if (col.gameObject == gameObject)
+            continue;
 
-        foreach (Collider2D col in hits)
+        Vector2 directionToObject =
+            ((Vector2)col.transform.position - (Vector2)transform.position).normalized;
+
+        // Dot > 0 nghĩa là object nằm phía trước
+        float dot = Vector2.Dot(moveDirection, directionToObject);
+
+        // Chỉ xét object nằm phía trước
+        if (dot <= 0)
+            continue;
+
+
+        // =========================
+        // ENEMY
+        // =========================
+        if (col.CompareTag("enemy"))
         {
-            if (col.gameObject == gameObject)
-                continue;
+            target = col.gameObject;
 
-            if (col.CompareTag("enemy"))
-            {
-                target = col.gameObject;
-                break;
-            }
+            // Enemy ưu tiên
+            return;
+        }
+
+
+        // =========================
+        // ALLY
+        // =========================
+        if (col.CompareTag("ally"))
+        {
+            blockedByAlly = true;
         }
     }
+}
 
 
     // ==========================================
@@ -149,6 +205,8 @@ public class Soldier : MonoBehaviour
     // ==========================================
     public void AttackAnimationFinished()
     {
+        Debug.Log("da danh thanh cong object co ten:" + target.name);
+        target.GetComponent<Soldier>().getHitted(Damage);
         // Enemy đã chết / ra khỏi range
         if (pendingStopAttack ||
             target == null ||
@@ -161,6 +219,16 @@ public class Soldier : MonoBehaviour
         // Enemy vẫn còn
         // Giữ trạng thái attack để đánh tiếp
         animator.SetBool("isAttack", true);
+    }
+
+    public void getHitted(int damage)
+    {
+        Health = Mathf.Max(0, Health - damage);
+        Debug.Log("mau con lai" + Health);
+        if(Health == 0)
+        {
+            Destroy(gameObject);
+        }
     }
 
 
