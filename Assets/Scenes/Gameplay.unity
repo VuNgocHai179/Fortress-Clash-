@@ -1670,6 +1670,7 @@ MonoBehaviour:
   BlueGate: {fileID: 1742506504}
   RedGate: {fileID: 1216798959}
   Sword: {fileID: 1348272604327182895, guid: bcef0755a0de6094f88816ff7809b9a6, type: 3}
+  Archer: {fileID: 2515233314138207333, guid: afb630842792418458763d21693d8a71, type: 3}
   Money: 100
   numberMoney: {fileID: 923750884}
   chooseDelay: 1.5

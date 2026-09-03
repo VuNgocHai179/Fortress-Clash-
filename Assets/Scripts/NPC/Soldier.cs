@@ -5,7 +5,7 @@ public class Soldier : MonoBehaviour
 {
     public float Velocity;
 
-    private float baseSpeed;
+    protected float baseSpeed;
 
     public bool BlueSide;
 
@@ -39,11 +39,11 @@ public class Soldier : MonoBehaviour
     public float AllyCheckRadius = 0.25f;
 
 
-    private GameObject target;
+    protected GameObject target;
 
-    private bool isAttacking;
-    private bool canMove = true;
-    private bool pendingStopAttack;
+    protected bool isAttacking;
+    protected bool canMove = true;
+    protected bool pendingStopAttack;
 
     // Ally đang đứng trước mặt và chặn đường
     private bool blockedByAlly;
@@ -68,7 +68,7 @@ public class Soldier : MonoBehaviour
     }
 
 
-    void Update()
+    protected virtual void Update()
 {
     // ==========================================
     // ALLY ĐANG CHẶN
@@ -155,7 +155,7 @@ public class Soldier : MonoBehaviour
     // KIỂM TRA TARGET
     // ==========================================
 
-    private bool IsValidTarget(GameObject t)
+    protected bool IsValidTarget(GameObject t)
     {
         if (t == null)
             return false;
@@ -176,7 +176,7 @@ public class Soldier : MonoBehaviour
     // ATTACK
     // ==========================================
 
-    private void StartAttack()
+    protected void StartAttack()
     {
         if (isAttacking)
             return;
@@ -193,7 +193,7 @@ public class Soldier : MonoBehaviour
     }
 
 
-    private void StopAttack()
+    protected void StopAttack()
     {
         isAttacking = false;
         canMove = true;
@@ -211,7 +211,7 @@ public class Soldier : MonoBehaviour
     // NHẢY TỚI DESTINATION
     // ==========================================
 
-    private void JumpToDestination()
+    protected void JumpToDestination()
 {
     // ==========================================
     // KIỂM TRA ALLY TRƯỚC KHI NHẢY
@@ -434,7 +434,7 @@ public class Soldier : MonoBehaviour
     // DỪNG NHẢY
     // ==========================================
 
-    private void StopJump()
+    protected void StopJump()
 {
     if (jumpSequence != null)
     {
@@ -453,7 +453,7 @@ public class Soldier : MonoBehaviour
     // TÌM TARGET
     // ==========================================
 
-    private void FindTarget()
+    protected virtual void FindTarget()
 {
     Collider2D[] hits = Physics2D.OverlapCircleAll(
         transform.position,

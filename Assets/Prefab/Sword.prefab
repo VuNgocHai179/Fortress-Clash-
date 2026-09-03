@@ -109,12 +109,14 @@ MonoBehaviour:
   SpawnPosition: {x: 0, y: 0}
   AttackRange: 1.5
   Health: 40
-  Damage: 10
+  Damage: 0
   Price: 20
   JumpDistance: 2
   JumpHeight: 0.25
   JumpDuration: 0.3
   JumpDelay: 0.05
+  AllyCheckDistance: 0.7
+  AllyCheckRadius: 0.25
 --- !u!50 &2218259829254655681
 Rigidbody2D:
   serializedVersion: 5

@@ -8,6 +8,7 @@ public class GameManager : Singleton<GameManager>
     public GameObject BlueGate;
     public GameObject RedGate;
     public GameObject Sword;
+    public GameObject Archer;
 
     public int Money;
 
@@ -97,7 +98,22 @@ public class GameManager : Singleton<GameManager>
         if (!CanChoose())
             return;
 
+        int price = Archer.GetComponent<Archer>().Price;
+
+        if(!isEnoughMoney(price))
+            return;
+        spentMoney(price);
+
         Debug.Log("ArcherChoosen");
+
+        GameObject ArcherSpawn = Instantiate(
+            Archer,
+            BlueGate.transform.position,
+            Quaternion.identity
+        );
+
+        ArcherSpawn.GetComponent<Archer>().Destination = RedGate.transform.position;
+        ArcherSpawn.GetComponent<Archer>().SpawnPosition = BlueGate.transform.position;
 
         StartCoroutine(ChooseCooldown());
     }
