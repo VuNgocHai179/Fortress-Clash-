@@ -111,6 +111,10 @@ MonoBehaviour:
   Health: 40
   Damage: 10
   Price: 20
+  JumpDistance: 2
+  JumpHeight: 0.25
+  JumpDuration: 0.3
+  JumpDelay: 0.05
 --- !u!50 &2218259829254655681
 Rigidbody2D:
   serializedVersion: 5

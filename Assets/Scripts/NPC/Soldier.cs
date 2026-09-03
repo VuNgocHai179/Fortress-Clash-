@@ -1,4 +1,5 @@
 using UnityEngine;
+using DG.Tweening;
 
 public class Soldier : MonoBehaviour
 {
@@ -14,10 +15,29 @@ public class Soldier : MonoBehaviour
     public float AttackRange = 1.5f;
 
     public int Health;
-
     public int Damage;
-
     public int Price;
+
+    // ==========================================
+    // JUMP SETTINGS
+    // ==========================================
+
+    [Header("Jump Settings")]
+    public float JumpDistance = 0.5f;
+
+    public float JumpHeight = 0.25f;
+
+    // Thời gian thực hiện 1 cú nhảy
+    // Càng nhỏ = nhảy càng nhanh
+    public float JumpDuration = 0.3f;
+
+    // Thời gian nghỉ giữa 2 cú nhảy
+    public float JumpDelay = 0.05f;
+
+    [Header("Ally Blocking")]
+    public float AllyCheckDistance = 0.7f;
+    public float AllyCheckRadius = 0.25f;
+
 
     private GameObject target;
 
@@ -28,63 +48,112 @@ public class Soldier : MonoBehaviour
     // Ally đang đứng trước mặt và chặn đường
     private bool blockedByAlly;
 
+    // Đang thực hiện cú nhảy
+    private bool isJumping;
+
     private Animator animator;
+
+    private Vector3 originalScale;
+
+    private Sequence jumpSequence;
 
 
     void Start()
     {
         baseSpeed = Velocity;
         animator = GetComponent<Animator>();
+
+        // Lưu scale ban đầu của nhân vật
+        originalScale = transform.localScale;
     }
 
 
     void Update()
+{
+    // ==========================================
+    // ALLY ĐANG CHẶN
+    // ==========================================
+
+    if (!isAttacking && IsAllyBlocking())
     {
-        // =========================
-        // ĐANG ATTACK
-        // =========================
-        if (isAttacking)
-        {
-            // Enemy đã chết hoặc ra khỏi tầm
-            if (target == null || !IsValidTarget(target))
-            {
-                pendingStopAttack = true;
-            }
+        blockedByAlly = true;
 
-            // Không di chuyển khi đang attack
-            return;
-        }
+        Velocity = 0f;
 
+        StopJump();
 
-        // =========================
-        // KHÔNG ATTACK
-        // =========================
-
-        FindTarget();
-
-        // Có enemy trong tầm
-        if (target != null)
-        {
-            StartAttack();
-            return;
-        }
-
-        // Có ally phía trước
-        if (blockedByAlly)
-        {
-            // Đứng yên
-            Velocity = 0f;
-            return;
-        }
-
-        // Không có enemy hoặc ally
-        if (canMove)
-        {
-            Velocity = baseSpeed;
-            MoveToDestination();
-        }
+        return;
     }
 
+    blockedByAlly = false;
+
+
+    // ==========================================
+    // ĐANG ATTACK
+    // ==========================================
+
+    if (isAttacking)
+    {
+        if (target == null || !IsValidTarget(target))
+        {
+            pendingStopAttack = true;
+        }
+
+        return;
+    }
+
+
+    // ==========================================
+    // TÌM TARGET
+    // ==========================================
+
+    FindTarget();
+
+
+    // ==========================================
+    // CÓ ENEMY
+    // ==========================================
+
+    if (target != null)
+    {
+        StopJump();
+
+        StartAttack();
+
+        return;
+    }
+
+
+    // ==========================================
+    // CÓ ALLY
+    // ==========================================
+
+    if (blockedByAlly)
+    {
+        Velocity = 0f;
+
+        StopJump();
+
+        return;
+    }
+
+
+    // ==========================================
+    // KHÔNG CÓ AI CHẶN
+    // ==========================================
+
+    if (canMove)
+    {
+        Velocity = baseSpeed;
+
+        JumpToDestination();
+    }
+}
+
+
+    // ==========================================
+    // KIỂM TRA TARGET
+    // ==========================================
 
     private bool IsValidTarget(GameObject t)
     {
@@ -103,6 +172,10 @@ public class Soldier : MonoBehaviour
     }
 
 
+    // ==========================================
+    // ATTACK
+    // ==========================================
+
     private void StartAttack()
     {
         if (isAttacking)
@@ -113,6 +186,8 @@ public class Soldier : MonoBehaviour
         pendingStopAttack = false;
 
         Velocity = 0f;
+
+        StopJump();
 
         animator.SetBool("isAttack", true);
     }
@@ -132,15 +207,251 @@ public class Soldier : MonoBehaviour
     }
 
 
-    private void MoveToDestination()
+    // ==========================================
+    // NHẢY TỚI DESTINATION
+    // ==========================================
+
+    private void JumpToDestination()
+{
+    // ==========================================
+    // KIỂM TRA ALLY TRƯỚC KHI NHẢY
+    // ==========================================
+
+    if (IsAllyBlocking())
     {
-        transform.position = Vector2.MoveTowards(
-            transform.position,
-            Destination,
-            Velocity * Time.deltaTime
-        );
+        Velocity = 0f;
+
+        StopJump();
+
+        return;
     }
 
+
+    // ==========================================
+    // VELOCITY = 0 THÌ KHÔNG NHẢY
+    // ==========================================
+
+    if (Velocity <= 0)
+    {
+        StopJump();
+        return;
+    }
+
+
+    // ==========================================
+    // ĐANG NHẢY THÌ KHÔNG TẠO CÚ NHẢY MỚI
+    // ==========================================
+
+    if (isJumping)
+        return;
+
+
+    Vector2 currentPosition = transform.position;
+
+
+    // ==========================================
+    // ĐÃ TỚI DESTINATION
+    // ==========================================
+
+    if (Vector2.Distance(currentPosition, Destination) < 0.05f)
+    {
+        transform.position = Destination;
+        return;
+    }
+
+
+    // ==========================================
+    // HƯỚNG DI CHUYỂN
+    // ==========================================
+
+    Vector2 direction =
+        (Destination - currentPosition).normalized;
+
+
+    // ==========================================
+    // KHOẢNG CÁCH CÒN LẠI
+    // ==========================================
+
+    float remainingDistance =
+        Vector2.Distance(currentPosition, Destination);
+
+
+    float distance = Mathf.Min(
+        JumpDistance,
+        remainingDistance
+    );
+
+
+    // ==========================================
+    // KIỂM TRA ALLY TRÊN ĐƯỜNG NHẢY
+    // ==========================================
+
+    RaycastHit2D[] hits = Physics2D.CircleCastAll(
+        currentPosition,
+        AllyCheckRadius,
+        direction,
+        distance
+    );
+
+    foreach (RaycastHit2D hit in hits)
+    {
+        if (hit.collider == null)
+            continue;
+
+        if (hit.collider.gameObject == gameObject)
+            continue;
+
+        if (hit.collider.CompareTag("ally"))
+        {
+            Velocity = 0f;
+
+            StopJump();
+
+            return;
+        }
+    }
+
+
+    // ==========================================
+    // VỊ TRÍ ĐÍCH CỦA CÚ NHẢY
+    // ==========================================
+
+    Vector2 jumpDestination =
+        currentPosition + direction * distance;
+
+
+    if (Vector2.Distance(jumpDestination, Destination) < 0.05f)
+    {
+        jumpDestination = Destination;
+    }
+
+
+    // ==========================================
+    // BẮT ĐẦU NHẢY
+    // ==========================================
+
+    isJumping = true;
+
+
+    float duration = JumpDuration;
+
+    if (baseSpeed > 0)
+    {
+        duration = distance / baseSpeed;
+
+        duration = Mathf.Max(0.05f, duration);
+    }
+
+
+    // ==========================================
+    // TẠO SEQUENCE
+    // ==========================================
+
+    jumpSequence = DOTween.Sequence();
+
+
+    // ==========================================
+    // NHÚN XUỐNG
+    // ==========================================
+
+    jumpSequence.Append(
+        transform.DOScale(
+            new Vector3(
+                originalScale.x * 1.15f,
+                originalScale.y * 0.80f,
+                originalScale.z
+            ),
+            0.08f
+        )
+    );
+
+
+    // ==========================================
+    // NHẢY
+    // ==========================================
+
+    jumpSequence.Append(
+        transform.DOJump(
+            jumpDestination,
+            JumpHeight,
+            1,
+            duration
+        )
+    );
+
+
+    // ==========================================
+    // DUỖI NGƯỜI
+    // ==========================================
+
+    jumpSequence.Join(
+        transform.DOScale(
+            new Vector3(
+                originalScale.x * 0.90f,
+                originalScale.y * 1.10f,
+                originalScale.z
+            ),
+            duration * 0.35f
+        )
+    );
+
+
+    // ==========================================
+    // TRỞ LẠI BÌNH THƯỜNG
+    // ==========================================
+
+    jumpSequence.Append(
+        transform.DOScale(
+            originalScale,
+            0.10f
+        )
+    );
+
+
+    // ==========================================
+    // DELAY
+    // ==========================================
+
+    jumpSequence.AppendInterval(JumpDelay);
+
+
+    // ==========================================
+    // KẾT THÚC
+    // ==========================================
+
+    jumpSequence.OnComplete(() =>
+    {
+        transform.localScale = originalScale;
+
+        isJumping = false;
+
+        jumpSequence = null;
+    });
+}
+
+
+    // ==========================================
+    // DỪNG NHẢY
+    // ==========================================
+
+    private void StopJump()
+{
+    if (jumpSequence != null)
+    {
+        jumpSequence.Kill();
+        jumpSequence = null;
+    }
+
+    isJumping = false;
+
+    // Trả nhân vật về scale ban đầu
+    transform.localScale = originalScale;
+}
+
+
+    // ==========================================
+    // TÌM TARGET
+    // ==========================================
 
     private void FindTarget()
 {
@@ -152,14 +463,19 @@ public class Soldier : MonoBehaviour
     target = null;
     blockedByAlly = false;
 
-    // Hướng soldier đang di chuyển
-    Vector2 moveDirection = (Destination - (Vector2)transform.position).normalized;
+    Vector2 moveDirection =
+        (Destination - (Vector2)transform.position).normalized;
 
-    // Nếu đã gần Destination thì không cần xét hướng
     if (moveDirection == Vector2.zero)
     {
         moveDirection = Vector2.right;
     }
+
+    float closestEnemyDistance = Mathf.Infinity;
+    float closestAllyDistance = Mathf.Infinity;
+
+    GameObject closestEnemy = null;
+    GameObject closestAlly = null;
 
     foreach (Collider2D col in hits)
     {
@@ -167,32 +483,69 @@ public class Soldier : MonoBehaviour
             continue;
 
         Vector2 directionToObject =
-            ((Vector2)col.transform.position - (Vector2)transform.position).normalized;
+            ((Vector2)col.transform.position -
+            (Vector2)transform.position).normalized;
 
-        // Dot > 0 nghĩa là object nằm phía trước
-        float dot = Vector2.Dot(moveDirection, directionToObject);
+        // Object phải nằm phía trước
+        float dot = Vector2.Dot(
+            moveDirection,
+            directionToObject
+        );
 
-        // Chỉ xét object nằm phía trước
         if (dot <= 0)
             continue;
 
+        float distance = Vector2.Distance(
+            transform.position,
+            col.transform.position
+        );
 
         // =========================
         // ENEMY
         // =========================
+
         if (col.CompareTag("enemy"))
         {
-            target = col.gameObject;
-
-            // Enemy ưu tiên
-            return;
+            if (distance < closestEnemyDistance)
+            {
+                closestEnemyDistance = distance;
+                closestEnemy = col.gameObject;
+            }
         }
-
 
         // =========================
         // ALLY
         // =========================
+
         if (col.CompareTag("ally"))
+        {
+            if (distance < closestAllyDistance)
+            {
+                closestAllyDistance = distance;
+                closestAlly = col.gameObject;
+            }
+        }
+    }
+
+    // =========================
+    // XỬ LÝ ENEMY
+    // =========================
+
+    if (closestEnemy != null)
+    {
+        target = closestEnemy;
+    }
+
+    // =========================
+    // XỬ LÝ ALLY CHẶN ĐƯỜNG
+    // =========================
+
+    if (closestAlly != null)
+    {
+        // Nếu Ally đứng trước Enemy
+        // thì Ally sẽ chặn đường
+        if (closestEnemy == null ||
+            closestAllyDistance < closestEnemyDistance)
         {
             blockedByAlly = true;
         }
@@ -203,10 +556,32 @@ public class Soldier : MonoBehaviour
     // ==========================================
     // GỌI Ở FRAME CUỐI CỦA ANIMATION ATTACK
     // ==========================================
+
     public void AttackAnimationFinished()
     {
-        Debug.Log("da danh thanh cong object co ten:" + target.name);
-        target.GetComponent<Soldier>().getHitted(Damage);
+        if (target == null)
+        {
+            StopAttack();
+            return;
+        }
+
+
+        Debug.Log(
+            "da danh thanh cong object co ten: "
+            + target.name
+        );
+
+
+        Soldier enemySoldier =
+            target.GetComponent<Soldier>();
+
+
+        if (enemySoldier != null)
+        {
+            enemySoldier.getHitted(Damage);
+        }
+
+
         // Enemy đã chết / ra khỏi range
         if (pendingStopAttack ||
             target == null ||
@@ -216,21 +591,77 @@ public class Soldier : MonoBehaviour
             return;
         }
 
+
         // Enemy vẫn còn
-        // Giữ trạng thái attack để đánh tiếp
+        // Giữ trạng thái attack
         animator.SetBool("isAttack", true);
     }
 
+
+    // ==========================================
+    // NHẬN DAMAGE
+    // ==========================================
+
     public void getHitted(int damage)
     {
-        Health = Mathf.Max(0, Health - damage);
-        Debug.Log("mau con lai" + Health);
-        if(Health == 0)
+        Health = Mathf.Max(
+            0,
+            Health - damage
+        );
+
+
+        Debug.Log(
+            "mau con lai " + Health
+        );
+
+
+        if (Health == 0)
         {
+            StopJump();
+
             Destroy(gameObject);
         }
     }
 
+    private bool IsAllyBlocking()
+{
+    Vector2 currentPosition = transform.position;
+
+    Vector2 moveDirection =
+        (Destination - currentPosition).normalized;
+
+    if (moveDirection == Vector2.zero)
+        return false;
+
+    RaycastHit2D[] hits = Physics2D.CircleCastAll(
+        currentPosition,
+        AllyCheckRadius,
+        moveDirection,
+        AllyCheckDistance
+    );
+
+    foreach (RaycastHit2D hit in hits)
+    {
+        if (hit.collider == null)
+            continue;
+
+        // Không xét chính mình
+        if (hit.collider.gameObject == gameObject)
+            continue;
+
+        if (hit.collider.CompareTag("ally"))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+    // ==========================================
+    // GIZMOS
+    // ==========================================
 
     private void OnDrawGizmosSelected()
     {

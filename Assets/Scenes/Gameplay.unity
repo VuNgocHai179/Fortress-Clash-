@@ -812,6 +812,12 @@ MonoBehaviour:
   Health: 20
   Damage: 0
   Price: 0
+  JumpDistance: 0
+  JumpHeight: 0
+  JumpDuration: 0
+  JumpDelay: 0
+  AllyCheckDistance: 0.7
+  AllyCheckRadius: 0.25
 --- !u!60 &580975465
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -1258,6 +1264,12 @@ MonoBehaviour:
   Health: 20
   Damage: 0
   Price: 0
+  JumpDistance: 0
+  JumpHeight: 0
+  JumpDuration: 0
+  JumpDelay: 0
+  AllyCheckDistance: 0.7
+  AllyCheckRadius: 0.25
 --- !u!1 &861149073
 GameObject:
   m_ObjectHideFlags: 0
@@ -1660,6 +1672,7 @@ MonoBehaviour:
   Sword: {fileID: 1348272604327182895, guid: bcef0755a0de6094f88816ff7809b9a6, type: 3}
   Money: 100
   numberMoney: {fileID: 923750884}
+  chooseDelay: 1.5
 --- !u!4 &1081867117
 Transform:
   m_ObjectHideFlags: 0
