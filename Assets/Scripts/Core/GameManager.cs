@@ -1,71 +1,144 @@
+using System.Collections;
 using FortressClash.Core;
+using TMPro;
 using UnityEngine;
 
 public class GameManager : Singleton<GameManager>
 {
-
     public GameObject BlueGate;
-
     public GameObject RedGate;
-
     public GameObject Sword;
 
     public int Money;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    [SerializeField]
+    private TextMeshProUGUI numberMoney;
+
+    // Thời gian delay giữa mỗi lần chọn lính
+    [SerializeField]
+    private float chooseDelay = 1f;
+
+    // Đang trong thời gian chờ hay không
+    private bool canChoose = true;
+
     void Start()
     {
-        
+        numberMoney.SetText(Money.ToString());
     }
 
-    // Update is called once per frame
-    void Update()
+    private bool isEnoughMoney(int money)
     {
-        
+        if (money <= Money)
+            return true;
+
+        Debug.Log("khong du dui ga");
+        return false;
     }
 
-    public void spentMoney(int money)
+    private void spentMoney(int money)
     {
-        if(money <= Money)
+        Money -= money;
+        numberMoney.SetText(Money.ToString());
+    }
+
+    // Kiểm tra có được chọn lính hay không
+    private bool CanChoose()
+    {
+        if (!canChoose)
         {
-            Money = Money - money;
+            Debug.Log("Đang chờ, chưa thể chọn lính!");
+            return false;
         }
-        else
-        {
-            Debug.Log("khong du dui ga");
-        }
+
+        return true;
+    }
+
+    // Bắt đầu thời gian delay
+    private IEnumerator ChooseCooldown()
+    {
+        canChoose = false;
+
+        yield return new WaitForSeconds(chooseDelay);
+
+        canChoose = true;
     }
 
     public void SwordChoosen()
     {
+        if (!CanChoose())
+            return;
+
+        int price = Sword.GetComponent<Soldier>().Price;
+
+        if (!isEnoughMoney(price))
+            return;
+
+        spentMoney(price);
+
         Debug.Log("SwordChoosen");
-        GameObject SwordSpawn = Instantiate(Sword, BlueGate.transform.position,Quaternion.identity);
-        SwordSpawn.GetComponent<Soldier>().Destination = RedGate.transform.position;
-        SwordSpawn.GetComponent<Soldier>().SpawnPosition = BlueGate.transform.position; 
+
+        GameObject SwordSpawn = Instantiate(
+            Sword,
+            BlueGate.transform.position,
+            Quaternion.identity
+        );
+
+        SwordSpawn.GetComponent<Soldier>().Destination =
+            RedGate.transform.position;
+
+        SwordSpawn.GetComponent<Soldier>().SpawnPosition =
+            BlueGate.transform.position;
+
+        StartCoroutine(ChooseCooldown());
     }
 
     public void ArcherChoosen()
     {
+        if (!CanChoose())
+            return;
+
         Debug.Log("ArcherChoosen");
+
+        StartCoroutine(ChooseCooldown());
     }
 
     public void SpearChoosen()
     {
+        if (!CanChoose())
+            return;
+
         Debug.Log("SpearChoosen");
+
+        StartCoroutine(ChooseCooldown());
     }
 
     public void SlingshotChoosen()
     {
+        if (!CanChoose())
+            return;
+
         Debug.Log("SlingshotChoosen");
+
+        StartCoroutine(ChooseCooldown());
     }
 
     public void SoldierChoosen()
     {
+        if (!CanChoose())
+            return;
+
         Debug.Log("SoldierChoosen");
+
+        StartCoroutine(ChooseCooldown());
     }
 
     public void CatapultChoosen()
     {
+        if (!CanChoose())
+            return;
+
         Debug.Log("CatapultChoosen");
+
+        StartCoroutine(ChooseCooldown());
     }
 }
