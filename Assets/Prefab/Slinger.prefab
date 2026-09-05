@@ -234,9 +234,9 @@ MonoBehaviour:
   JumpHeight: 0.25
   JumpDuration: 0.3
   JumpDelay: 0.05
-  AllyCheckDistance: 0.7
-  AllyCheckRadius: 0.25
-  ArcherAllyCheckDistance: 1
-  ArcherAllyCheckRadius: 0.4
-  SlingerAllyCheckDistance: 1
-  SlingerAllyCheckRadius: 0.4
+  AllyCheckDistance: 3
+  AllyCheckRadius: 1.2
+  ArcherAllyCheckDistance: 3
+  ArcherAllyCheckRadius: 1.2
+  SlingerAllyCheckDistance: 3
+  SlingerAllyCheckRadius: 1.2
