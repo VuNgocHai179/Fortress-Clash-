@@ -812,6 +812,7 @@ MonoBehaviour:
   Health: 20
   Damage: 0
   Price: 0
+  priceDrop: 100
   JumpDistance: 0
   JumpHeight: 0
   JumpDuration: 0
@@ -1264,6 +1265,7 @@ MonoBehaviour:
   Health: 20
   Damage: 0
   Price: 0
+  priceDrop: 100
   JumpDistance: 0
   JumpHeight: 0
   JumpDuration: 0
@@ -1673,6 +1675,7 @@ MonoBehaviour:
   Archer: {fileID: 2515233314138207333, guid: afb630842792418458763d21693d8a71, type: 3}
   Slinger: {fileID: 5182937461928374001, guid: 43ab3acb9c224634aa493a83d17dde10, type: 3}
   Money: 100
+  moneyPersecond: 5
   numberMoney: {fileID: 923750884}
   chooseDelay: 1.5
 --- !u!4 &1081867117

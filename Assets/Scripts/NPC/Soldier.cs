@@ -18,6 +18,8 @@ public class Soldier : MonoBehaviour
     public int Damage;
     public int Price;
 
+    public int priceDrop;
+
     // ==========================================
     // JUMP SETTINGS
     // ==========================================
@@ -632,6 +634,8 @@ public class Soldier : MonoBehaviour
 
         if (Health == 0)
         {
+            if(gameObject.CompareTag("enemy")) GameManager.Instance.Addmoney(priceDrop);
+
             StopJump();
 
             Destroy(gameObject);

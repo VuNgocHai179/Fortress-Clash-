@@ -13,6 +13,9 @@ public class GameManager : Singleton<GameManager>
 
     public int Money;
 
+    // Số tiền nhận được mỗi giây
+    public int moneyPersecond;
+
     [SerializeField]
     private TextMeshProUGUI numberMoney;
 
@@ -26,6 +29,24 @@ public class GameManager : Singleton<GameManager>
     void Start()
     {
         numberMoney.SetText(Money.ToString());
+
+        // Bắt đầu tăng tiền theo giây
+        StartCoroutine(AddMoneyPerSecond());
+    }
+
+    // ==========================================
+    // TĂNG TIỀN THEO GIÂY
+    // ==========================================
+    private IEnumerator AddMoneyPerSecond()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(1f);
+
+            Money += moneyPersecond;
+
+            numberMoney.SetText(Money.ToString());
+        }
     }
 
     private bool isEnoughMoney(int money)
@@ -101,8 +122,9 @@ public class GameManager : Singleton<GameManager>
 
         int price = Archer.GetComponent<Archer>().Price;
 
-        if(!isEnoughMoney(price))
+        if (!isEnoughMoney(price))
             return;
+
         spentMoney(price);
 
         Debug.Log("ArcherChoosen");
@@ -113,8 +135,11 @@ public class GameManager : Singleton<GameManager>
             Quaternion.identity
         );
 
-        ArcherSpawn.GetComponent<Archer>().Destination = RedGate.transform.position;
-        ArcherSpawn.GetComponent<Archer>().SpawnPosition = BlueGate.transform.position;
+        ArcherSpawn.GetComponent<Archer>().Destination =
+            RedGate.transform.position;
+
+        ArcherSpawn.GetComponent<Archer>().SpawnPosition =
+            BlueGate.transform.position;
 
         StartCoroutine(ChooseCooldown());
     }
@@ -150,8 +175,12 @@ public class GameManager : Singleton<GameManager>
         );
 
         Slinger slingerComponent = SlingerSpawn.GetComponent<Slinger>();
-        slingerComponent.Destination = RedGate.transform.position;
-        slingerComponent.SpawnPosition = BlueGate.transform.position;
+
+        slingerComponent.Destination =
+            RedGate.transform.position;
+
+        slingerComponent.SpawnPosition =
+            BlueGate.transform.position;
 
         StartCoroutine(ChooseCooldown());
     }
@@ -174,5 +203,11 @@ public class GameManager : Singleton<GameManager>
         Debug.Log("CatapultChoosen");
 
         StartCoroutine(ChooseCooldown());
+    }
+
+    public void Addmoney(int money)
+    {
+        Money += money;
+        numberMoney.SetText(Money.ToString());
     }
 }
