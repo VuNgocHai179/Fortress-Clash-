@@ -592,11 +592,14 @@ public class Soldier : MonoBehaviour
         Soldier enemySoldier =
             target.GetComponent<Soldier>();
 
+        Gate gate = target.GetComponent<Gate>();
+
 
         if (enemySoldier != null)
         {
             enemySoldier.getHitted(Damage);
         }
+        else if(gate != null) gate.getHitted(Damage);
 
 
         // Enemy đã chết / ra khỏi range

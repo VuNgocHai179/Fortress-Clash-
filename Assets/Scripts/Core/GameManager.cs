@@ -210,4 +210,16 @@ public class GameManager : Singleton<GameManager>
         Money += money;
         numberMoney.SetText(Money.ToString());
     }
+
+    public void Winner(string winner)
+    {
+        if(winner == "blue")
+        {
+            Debug.Log("blue win");
+        }
+        else if (winner == "red")
+        {
+            Debug.Log("red win");
+        }
+    }
 }

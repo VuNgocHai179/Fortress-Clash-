@@ -103,7 +103,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 79bc816599ce91f45b5241aa4d613125, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Velocity: 3
+  Velocity: 30
   BlueSide: 1
   Destination: {x: 0, y: 0}
   SpawnPosition: {x: 0, y: 0}
@@ -112,7 +112,7 @@ MonoBehaviour:
   Damage: 20
   Price: 20
   priceDrop: 0
-  JumpDistance: 2
+  JumpDistance: 20
   JumpHeight: 0.25
   JumpDuration: 0.3
   JumpDelay: 0.05
