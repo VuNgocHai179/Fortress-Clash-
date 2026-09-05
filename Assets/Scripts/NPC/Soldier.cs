@@ -155,13 +155,28 @@ public class Soldier : MonoBehaviour
     // KIỂM TRA TARGET
     // ==========================================
 
-    protected bool IsValidTarget(GameObject t)
+    protected virtual bool IsValidTarget(GameObject t)
     {
         if (t == null)
             return false;
 
         if (!t.activeInHierarchy)
             return false;
+
+        Collider2D col = t.GetComponent<Collider2D>();
+        if (col != null)
+        {
+            Vector2 closestPoint = col.ClosestPoint(transform.position);
+            float colliderDistance = Vector2.Distance(
+                transform.position,
+                closestPoint
+            );
+
+            if (colliderDistance <= AttackRange + 0.15f)
+            {
+                return true;
+            }
+        }
 
         float distance = Vector2.Distance(
             transform.position,
