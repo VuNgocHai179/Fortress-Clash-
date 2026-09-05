@@ -150,7 +150,7 @@ public class Archer : Soldier
     // KIỂM TRA ALLY PHÍA TRƯỚC
     // ==========================================
 
-    private bool ArcherHasAllyInFront()
+    protected virtual bool ArcherHasAllyInFront()
     {
         Vector2 currentPosition = transform.position;
 
@@ -208,7 +208,7 @@ public class Archer : Soldier
     // DEBUG
     // ==========================================
 
-    private void OnDrawGizmosSelected()
+    protected virtual void OnDrawGizmosSelected()
     {
         Vector2 direction =
             (Destination - (Vector2)transform.position).normalized;

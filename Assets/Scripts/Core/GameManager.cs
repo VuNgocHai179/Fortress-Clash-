@@ -9,6 +9,7 @@ public class GameManager : Singleton<GameManager>
     public GameObject RedGate;
     public GameObject Sword;
     public GameObject Archer;
+    public GameObject Slinger;
 
     public int Money;
 
@@ -133,7 +134,24 @@ public class GameManager : Singleton<GameManager>
         if (!CanChoose())
             return;
 
+        int price = Slinger.GetComponent<Slinger>().Price;
+
+        if (!isEnoughMoney(price))
+            return;
+
+        spentMoney(price);
+
         Debug.Log("SlingshotChoosen");
+
+        GameObject SlingerSpawn = Instantiate(
+            Slinger,
+            BlueGate.transform.position,
+            Quaternion.identity
+        );
+
+        Slinger slingerComponent = SlingerSpawn.GetComponent<Slinger>();
+        slingerComponent.Destination = RedGate.transform.position;
+        slingerComponent.SpawnPosition = BlueGate.transform.position;
 
         StartCoroutine(ChooseCooldown());
     }
