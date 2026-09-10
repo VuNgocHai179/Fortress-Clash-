@@ -48,7 +48,7 @@ public class Soldier : MonoBehaviour
     protected bool pendingStopAttack;
 
     // Ally đang đứng trước mặt và chặn đường
-    private bool blockedByAlly;
+    protected bool blockedByAlly;
 
     // Đang thực hiện cú nhảy
     private bool isJumping;
@@ -228,7 +228,7 @@ public class Soldier : MonoBehaviour
     // NHẢY TỚI DESTINATION
     // ==========================================
 
-    protected void JumpToDestination()
+    protected virtual void JumpToDestination()
 {
     // ==========================================
     // KIỂM TRA ALLY TRƯỚC KHI NHẢY
@@ -521,7 +521,7 @@ public class Soldier : MonoBehaviour
         // ENEMY
         // =========================
 
-        if (col.CompareTag("enemy"))
+        if (col.CompareTag("enemy") || col.CompareTag("enemygate"))
         {
             if (distance < closestEnemyDistance)
             {
@@ -637,7 +637,7 @@ public class Soldier : MonoBehaviour
 
         if (Health == 0)
         {
-            if(gameObject.CompareTag("enemy")) GameManager.Instance.Addmoney(priceDrop);
+            if(gameObject.CompareTag("enemy") || gameObject.CompareTag("enemygate")) GameManager.Instance.Addmoney(priceDrop);
 
             StopJump();
 

@@ -1258,6 +1258,10 @@ MonoBehaviour:
   Sword: {fileID: 1348272604327182895, guid: bcef0755a0de6094f88816ff7809b9a6, type: 3}
   Archer: {fileID: 2515233314138207333, guid: afb630842792418458763d21693d8a71, type: 3}
   Slinger: {fileID: 5182937461928374001, guid: 43ab3acb9c224634aa493a83d17dde10, type: 3}
+  SpearMan: {fileID: 8136004846990613505, guid: 0255e627838691547948c105cc5a3452, type: 3}
+  Soldier: {fileID: 5610560448965575598, guid: fc15fcaa459e52c4b84cdb513e44997f, type: 3}
+  Catapult: {fileID: 345795915646352888, guid: 0b82774a156b8a74f993264f4b3d12b9, type: 3}
+  RedSword: {fileID: 2689597940771274120, guid: f90c28ee214a6d044ac7429ef823c20e, type: 3}
   Money: 100
   moneyPersecond: 5
   numberMoney: {fileID: 923750884}
@@ -1291,7 +1295,7 @@ GameObject:
   - component: {fileID: 1216798963}
   m_Layer: 0
   m_Name: gate
-  m_TagString: enemy
+  m_TagString: enemygate
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1396,8 +1400,8 @@ PolygonCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
+  m_IsTrigger: 1
+  m_UsedByEffector: 1
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
@@ -2278,7 +2282,7 @@ GameObject:
   - component: {fileID: 1742506508}
   m_Layer: 0
   m_Name: gate
-  m_TagString: Untagged
+  m_TagString: allygate
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2397,7 +2401,7 @@ PolygonCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0

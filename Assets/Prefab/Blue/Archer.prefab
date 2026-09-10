@@ -230,6 +230,7 @@ MonoBehaviour:
   Health: 0
   Damage: 10
   Price: 0
+  priceDrop: 0
   JumpDistance: 0.5
   JumpHeight: 0.25
   JumpDuration: 0.3

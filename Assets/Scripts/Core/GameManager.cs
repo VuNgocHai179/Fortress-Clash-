@@ -10,6 +10,12 @@ public class GameManager : Singleton<GameManager>
     public GameObject Sword;
     public GameObject Archer;
     public GameObject Slinger;
+    public GameObject SpearMan;
+    public GameObject Soldier;
+    public GameObject Catapult;
+
+
+    public GameObject RedSword;
 
     public int Money;
 
@@ -32,6 +38,8 @@ public class GameManager : Singleton<GameManager>
 
         // Bắt đầu tăng tiền theo giây
         StartCoroutine(AddMoneyPerSecond());
+
+        RedSwordChoosen();
     }
 
     // ==========================================
@@ -88,66 +96,26 @@ public class GameManager : Singleton<GameManager>
 
     public void SwordChoosen()
     {
-        if (!CanChoose())
-            return;
-
-        int price = Sword.GetComponent<Soldier>().Price;
-
-        if (!isEnoughMoney(price))
-            return;
-
-        spentMoney(price);
+        spawnSoldier(Sword);
+        spawnEnemy(RedSword);
 
         Debug.Log("SwordChoosen");
-
-        GameObject SwordSpawn = Instantiate(
-            Sword,
-            BlueGate.transform.position,
-            Quaternion.identity
-        );
-
-        SwordSpawn.GetComponent<Soldier>().Destination =
-            RedGate.transform.position;
-
-        SwordSpawn.GetComponent<Soldier>().SpawnPosition =
-            BlueGate.transform.position;
 
         StartCoroutine(ChooseCooldown());
     }
 
     public void ArcherChoosen()
     {
-        if (!CanChoose())
-            return;
-
-        int price = Archer.GetComponent<Archer>().Price;
-
-        if (!isEnoughMoney(price))
-            return;
-
-        spentMoney(price);
+        spawnSoldier(Archer);
 
         Debug.Log("ArcherChoosen");
-
-        GameObject ArcherSpawn = Instantiate(
-            Archer,
-            BlueGate.transform.position,
-            Quaternion.identity
-        );
-
-        ArcherSpawn.GetComponent<Archer>().Destination =
-            RedGate.transform.position;
-
-        ArcherSpawn.GetComponent<Archer>().SpawnPosition =
-            BlueGate.transform.position;
 
         StartCoroutine(ChooseCooldown());
     }
 
     public void SpearChoosen()
     {
-        if (!CanChoose())
-            return;
+        spawnSoldier(SpearMan);
 
         Debug.Log("SpearChoosen");
 
@@ -156,39 +124,16 @@ public class GameManager : Singleton<GameManager>
 
     public void SlingshotChoosen()
     {
-        if (!CanChoose())
-            return;
-
-        int price = Slinger.GetComponent<Slinger>().Price;
-
-        if (!isEnoughMoney(price))
-            return;
-
-        spentMoney(price);
+        spawnSoldier(Slinger);
 
         Debug.Log("SlingshotChoosen");
-
-        GameObject SlingerSpawn = Instantiate(
-            Slinger,
-            BlueGate.transform.position,
-            Quaternion.identity
-        );
-
-        Slinger slingerComponent = SlingerSpawn.GetComponent<Slinger>();
-
-        slingerComponent.Destination =
-            RedGate.transform.position;
-
-        slingerComponent.SpawnPosition =
-            BlueGate.transform.position;
 
         StartCoroutine(ChooseCooldown());
     }
 
     public void SoldierChoosen()
     {
-        if (!CanChoose())
-            return;
+        spawnSoldier(Soldier);
 
         Debug.Log("SoldierChoosen");
 
@@ -197,10 +142,16 @@ public class GameManager : Singleton<GameManager>
 
     public void CatapultChoosen()
     {
-        if (!CanChoose())
-            return;
+        spawnSoldier(Catapult);
 
         Debug.Log("CatapultChoosen");
+
+        StartCoroutine(ChooseCooldown());
+    }
+
+    public void RedSwordChoosen()
+    {
+        spawnEnemy(RedSword);
 
         StartCoroutine(ChooseCooldown());
     }
@@ -221,5 +172,51 @@ public class GameManager : Singleton<GameManager>
         {
             Debug.Log("red win");
         }
+    }
+
+    private void spawnSoldier(GameObject spawn)
+    {
+        if (!CanChoose())
+            return;
+
+        int price = spawn.GetComponent<Soldier>().Price;
+
+        if (!isEnoughMoney(price))
+            return;
+
+        spentMoney(price);
+
+        GameObject Spawn = Instantiate(spawn,
+        BlueGate.transform.position,
+        Quaternion.identity);
+
+        Spawn.GetComponent<Soldier>().Destination =
+            RedGate.transform.position;
+
+        Spawn.GetComponent<Soldier>().SpawnPosition =
+            BlueGate.transform.position;
+    }
+
+    private void spawnEnemy(GameObject spawn)
+    {
+        if (!CanChoose())
+            return;
+
+        int price = spawn.GetComponent<SoldierEnemy>().Price;
+
+        if (!isEnoughMoney(price))
+            return;
+
+        spentMoney(price);
+
+        GameObject Spawn = Instantiate(spawn,
+        RedGate.transform.position,
+        Quaternion.identity);
+
+        Spawn.GetComponent<SoldierEnemy>().Destination =
+            BlueGate.transform.position;
+
+        Spawn.GetComponent<SoldierEnemy>().SpawnPosition =
+            RedGate.transform.position;
     }
 }

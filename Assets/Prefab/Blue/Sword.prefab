@@ -109,10 +109,10 @@ MonoBehaviour:
   SpawnPosition: {x: 0, y: 0}
   AttackRange: 1.5
   Health: 40
-  Damage: 20
+  Damage: 0
   Price: 20
   priceDrop: 0
-  JumpDistance: 20
+  JumpDistance: 2
   JumpHeight: 0.25
   JumpDuration: 0.3
   JumpDelay: 0.05
