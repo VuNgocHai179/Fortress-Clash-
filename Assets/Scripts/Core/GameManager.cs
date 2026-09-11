@@ -3,6 +3,32 @@ using FortressClash.Core;
 using TMPro;
 using UnityEngine;
 
+public struct PlayerHas
+{
+    public int SwordNumber;
+    public int ArcherNumber;
+    public int SlingerNumber;
+    public int SpearManNumber;
+    public int SoldierNumber;
+    public int CatapultNumber;
+}
+
+public struct AIHas
+{
+    public int SwordNumber;
+    public int ArcherNumber;
+    public int SlingerNumber;
+    public int SpearManNumber;
+    public int SoldierNumber;
+    public int CatapultNumber;
+    public int SwordMoney;
+    public int ArcherMoney;
+    public int SlingerMoney;
+    public int SpearManMoney;
+    public int CatapultMoney;
+    public int Money;
+}
+
 public class GameManager : Singleton<GameManager>
 {
     public GameObject BlueGate;
@@ -16,8 +42,15 @@ public class GameManager : Singleton<GameManager>
 
 
     public GameObject RedSword;
+    public GameObject RedArcher;
+    public GameObject RedSlinger;
+    public GameObject RedSpearMan;
+    public GameObject RedSoldier;
+    public GameObject RedCatapult;
 
     public int Money;
+
+    public int AIMoney;
 
     // Số tiền nhận được mỗi giây
     public int moneyPersecond;
@@ -32,14 +65,17 @@ public class GameManager : Singleton<GameManager>
     // Đang trong thời gian chờ hay không
     private bool canChoose = true;
 
+    public PlayerHas player;
+
+    public AIHas AI;
+
     void Start()
     {
         numberMoney.SetText(Money.ToString());
+        setMoneyforAI();
 
         // Bắt đầu tăng tiền theo giây
         StartCoroutine(AddMoneyPerSecond());
-
-        RedSwordChoosen();
     }
 
     // ==========================================
@@ -97,7 +133,7 @@ public class GameManager : Singleton<GameManager>
     public void SwordChoosen()
     {
         spawnSoldier(Sword);
-        spawnEnemy(RedSword);
+        player.SwordNumber++;
 
         Debug.Log("SwordChoosen");
 
@@ -107,6 +143,7 @@ public class GameManager : Singleton<GameManager>
     public void ArcherChoosen()
     {
         spawnSoldier(Archer);
+        player.ArcherNumber++;
 
         Debug.Log("ArcherChoosen");
 
@@ -116,6 +153,7 @@ public class GameManager : Singleton<GameManager>
     public void SpearChoosen()
     {
         spawnSoldier(SpearMan);
+        player.SpearManNumber++;
 
         Debug.Log("SpearChoosen");
 
@@ -125,6 +163,7 @@ public class GameManager : Singleton<GameManager>
     public void SlingshotChoosen()
     {
         spawnSoldier(Slinger);
+        player.SlingerNumber++;
 
         Debug.Log("SlingshotChoosen");
 
@@ -134,6 +173,7 @@ public class GameManager : Singleton<GameManager>
     public void SoldierChoosen()
     {
         spawnSoldier(Soldier);
+        player.SoldierNumber++;
 
         Debug.Log("SoldierChoosen");
 
@@ -143,6 +183,7 @@ public class GameManager : Singleton<GameManager>
     public void CatapultChoosen()
     {
         spawnSoldier(Catapult);
+        player.CatapultNumber++;
 
         Debug.Log("CatapultChoosen");
 
@@ -152,8 +193,37 @@ public class GameManager : Singleton<GameManager>
     public void RedSwordChoosen()
     {
         spawnEnemy(RedSword);
+        AI.SwordNumber++;
+    }
 
-        StartCoroutine(ChooseCooldown());
+    public void RedArcherChoosen()
+    {
+        spawnEnemy(RedArcher);
+        AI.ArcherNumber++;
+    }
+
+    public void RedSoldierChoosen()
+    {
+        spawnEnemy(RedSoldier);
+        AI.SoldierNumber++;
+    }
+
+    public void RedSlingerChoosen()
+    {
+        spawnEnemy(RedSlinger);
+        AI.SlingerNumber++;
+    }
+
+    public void RedCatapultChoosen()
+    {
+        spawnEnemy(RedCatapult);
+        AI.CatapultNumber++;
+    }
+
+    public void RedSpearManChoosen()
+    {
+        spawnEnemy(RedSpearMan);
+        AI.SpearManNumber++;
     }
 
     public void Addmoney(int money)
@@ -204,10 +274,7 @@ public class GameManager : Singleton<GameManager>
 
         int price = spawn.GetComponent<SoldierEnemy>().Price;
 
-        if (!isEnoughMoney(price))
-            return;
-
-        spentMoney(price);
+        AI.Money -= price;
 
         GameObject Spawn = Instantiate(spawn,
         RedGate.transform.position,
@@ -218,5 +285,16 @@ public class GameManager : Singleton<GameManager>
 
         Spawn.GetComponent<SoldierEnemy>().SpawnPosition =
             RedGate.transform.position;
+    }
+
+    private void setMoneyforAI()
+    {
+        AI.SwordMoney = RedSword.GetComponent<SoldierEnemy>().Price;
+        AI.ArcherMoney = RedArcher.GetComponent<SoldierEnemy>().Price;
+        AI.SlingerMoney = RedSlinger.GetComponent<SoldierEnemy>().Price;
+        AI.CatapultMoney = RedCatapult.GetComponent<SoldierEnemy>().Price;
+        AI.SpearManMoney = RedSpearMan.GetComponent<SoldierEnemy>().Price;
+        AI.SoldierNumber = RedSoldier.GetComponent<SoldierEnemy>().Price;
+        AI.Money = AIMoney;
     }
 }
