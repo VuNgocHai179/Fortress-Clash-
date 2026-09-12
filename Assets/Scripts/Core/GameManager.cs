@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using FortressClash.Core;
 using TMPro;
@@ -300,5 +301,71 @@ public class GameManager : Singleton<GameManager>
         AI.SpearManMoney = RedSpearMan.GetComponent<SoldierEnemy>().Price;
         AI.SoldierMoney = RedSoldier.GetComponent<SoldierEnemy>().Price;
         AI.Money = AIMoney;
+    }
+    public void soldierDown(String name)
+    {
+        switch(name)
+        {
+            case "BlueSword":
+                {
+                    player.SwordNumber--;
+                    return;
+                }
+            case "BlueArcher":
+                {
+                    player.ArcherNumber--;
+                    return;
+                }
+            case "BlueSlinger":
+                {
+                    player.SlingerNumber--;
+                    return;
+                }
+            case "BlueSoldier":
+                {
+                    player.SoldierNumber--;
+                    return;
+                }
+            case "BlueCatapult":
+                {
+                    player.CatapultNumber--;
+                    return;
+                }
+            case "BlueSpearMan":
+                {
+                    player.SpearManNumber--;
+                    return;
+                }
+            case "RedSword":
+                {
+                    AI.SwordNumber--;
+                    return;
+                }
+            case "RedArcher":
+                {
+                    AI.ArcherNumber--;
+                    return;
+                }
+            case "RedSlinger":
+                {
+                    AI.SlingerNumber--;
+                    return;
+                }
+            case "RedSoldier":
+                {
+                    AI.SoldierNumber--;
+                    return;
+                }
+            case "RedCatapult":
+                {
+                    AI.CatapultNumber--;
+                    return;
+                }
+            case "RedSpearMan":
+                {
+                    AI.SpearManNumber--;
+                    return;
+                }
+        }
     }
 }

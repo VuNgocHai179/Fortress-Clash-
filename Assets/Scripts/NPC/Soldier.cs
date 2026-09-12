@@ -1,5 +1,6 @@
 using UnityEngine;
 using DG.Tweening;
+using System;
 
 public class Soldier : MonoBehaviour
 {
@@ -58,6 +59,9 @@ public class Soldier : MonoBehaviour
     private Vector3 originalScale;
 
     private Sequence jumpSequence;
+
+    [SerializeField]
+    private String Name;
 
 
     void Start()
@@ -589,8 +593,8 @@ public class Soldier : MonoBehaviour
         );
 
 
-        Soldier enemySoldier =
-            target.GetComponent<Soldier>();
+        SoldierEnemy enemySoldier =
+            target.GetComponent<SoldierEnemy>();
 
         Gate gate = target.GetComponent<Gate>();
 
@@ -638,6 +642,8 @@ public class Soldier : MonoBehaviour
         if (Health == 0)
         {
             if(gameObject.CompareTag("ally")) GameManager.Instance.AI.Money += priceDrop;
+
+            GameManager.Instance.soldierDown(Name);
 
             StopJump();
 

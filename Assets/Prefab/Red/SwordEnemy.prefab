@@ -118,6 +118,7 @@ MonoBehaviour:
   JumpDelay: 0.05
   AllyCheckDistance: 0.7
   AllyCheckRadius: 0.25
+  Name: RedSword
 --- !u!50 &8305365852761589162
 Rigidbody2D:
   serializedVersion: 5

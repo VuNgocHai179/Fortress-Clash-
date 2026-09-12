@@ -118,6 +118,7 @@ MonoBehaviour:
   JumpDelay: 0.05
   AllyCheckDistance: 0.7
   AllyCheckRadius: 0.25
+  Name: RedSoldier
 --- !u!50 &5329692959198842236
 Rigidbody2D:
   serializedVersion: 5

@@ -1,5 +1,6 @@
 using UnityEngine;
 using DG.Tweening;
+using System;
 
 public class SoldierEnemy : MonoBehaviour
 {
@@ -58,6 +59,9 @@ public class SoldierEnemy : MonoBehaviour
     private Vector3 originalScale;
 
     private Sequence jumpSequence;
+
+    [SerializeField]
+    private String Name;
 
 
     void Start()
@@ -627,6 +631,8 @@ protected virtual void FindTarget()
         if (Health == 0)
         {
             if(gameObject.CompareTag("enemy")) GameManager.Instance.Addmoney(priceDrop);
+
+            GameManager.Instance.soldierDown(Name);
 
             StopJump();
 

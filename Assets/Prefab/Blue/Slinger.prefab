@@ -237,6 +237,7 @@ MonoBehaviour:
   JumpDelay: 0.05
   AllyCheckDistance: 0.7
   AllyCheckRadius: 0.25
+  Name: BlueSlinger
   ArcherAllyCheckDistance: 1.2
   ArcherAllyCheckRadius: 0.5
   SlingerAllyCheckDistance: 1.2

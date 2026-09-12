@@ -118,6 +118,7 @@ MonoBehaviour:
   JumpDelay: 0.05
   AllyCheckDistance: 0.7
   AllyCheckRadius: 0.25
+  Name: RedSlinger
   ArcherAllyCheckDistance: 1.5
   ArcherAllyCheckRadius: 0.35
 --- !u!50 &7853904146633224729
