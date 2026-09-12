@@ -134,7 +134,7 @@ public class GameManager : Singleton<GameManager>
         canChoose = true;
     }
 
-    public void SwordChoosen()
+    public virtual void SwordChoosen()
     {
         spawnSoldier(Sword);
         player.SwordNumber++;
@@ -144,7 +144,7 @@ public class GameManager : Singleton<GameManager>
         StartCoroutine(ChooseCooldown());
     }
 
-    public void ArcherChoosen()
+    public virtual void ArcherChoosen()
     {
         spawnSoldier(Archer);
         player.ArcherNumber++;
@@ -154,7 +154,7 @@ public class GameManager : Singleton<GameManager>
         StartCoroutine(ChooseCooldown());
     }
 
-    public void SpearChoosen()
+    public virtual void SpearChoosen()
     {
         spawnSoldier(SpearMan);
         player.SpearManNumber++;
@@ -164,7 +164,7 @@ public class GameManager : Singleton<GameManager>
         StartCoroutine(ChooseCooldown());
     }
 
-    public void SlingshotChoosen()
+    public virtual void SlingshotChoosen()
     {
         spawnSoldier(Slinger);
         player.SlingerNumber++;
@@ -174,7 +174,7 @@ public class GameManager : Singleton<GameManager>
         StartCoroutine(ChooseCooldown());
     }
 
-    public void SoldierChoosen()
+    public virtual void SoldierChoosen()
     {
         spawnSoldier(Soldier);
         player.SoldierNumber++;
@@ -184,7 +184,7 @@ public class GameManager : Singleton<GameManager>
         StartCoroutine(ChooseCooldown());
     }
 
-    public void CatapultChoosen()
+    public virtual void CatapultChoosen()
     {
         spawnSoldier(Catapult);
         player.CatapultNumber++;
