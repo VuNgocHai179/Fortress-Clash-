@@ -251,6 +251,7 @@ public class GameManager : Singleton<GameManager>
     {
         if (!CanChoose())
             return;
+        if(!BlueGate.GetComponent<Gate>().CheckAroundHasSoldier()) return;
 
         int price = spawn.GetComponent<Soldier>().Price;
 
@@ -272,6 +273,7 @@ public class GameManager : Singleton<GameManager>
 
     private void spawnEnemy(GameObject spawn)
     {
+        if(!RedGate.GetComponent<Gate>().CheckAroundHasSoldier()) return;
         int price = spawn.GetComponent<SoldierEnemy>().Price;
         if(AIMoney<price) return;
 

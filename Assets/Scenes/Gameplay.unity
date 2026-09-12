@@ -1316,7 +1316,7 @@ MonoBehaviour:
   AIMoney: 100
   moneyPersecond: 5
   numberMoney: {fileID: 923750884}
-  chooseDelay: 1.5
+  chooseDelay: 0
 --- !u!4 &1081867117
 Transform:
   m_ObjectHideFlags: 0
@@ -1492,6 +1492,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Health: 100
   oppositeSide: blue
+  checkRadius: 2
 --- !u!1 &1444967526
 GameObject:
   m_ObjectHideFlags: 0
@@ -2422,6 +2423,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Health: 100
   oppositeSide: red
+  checkRadius: 2
 --- !u!60 &1742506508
 PolygonCollider2D:
   m_ObjectHideFlags: 0

@@ -9,6 +9,9 @@ public class Gate : MonoBehaviour
     [SerializeField]
     private String oppositeSide;
 
+    [SerializeField]
+    private float checkRadius = 2f;
+
     public void getHitted(int damage)
     {
         Health = Mathf.Max(
@@ -22,5 +25,27 @@ public class Gate : MonoBehaviour
     private void sendMessgeWinner()
     {
         GameManager.Instance.Winner(oppositeSide);
+    }
+
+    public bool CheckAroundHasSoldier()
+    {
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(
+            transform.position,
+            checkRadius
+        );
+
+        foreach (Collider2D collider in colliders)
+        {
+            if (collider.GetComponent<Soldier>() != null && oppositeSide == "red")
+            {
+                return false;
+            }
+            else if(collider.GetComponent<SoldierEnemy>() != null && oppositeSide == "blue")
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
