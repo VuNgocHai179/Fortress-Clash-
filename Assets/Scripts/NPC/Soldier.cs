@@ -637,7 +637,7 @@ public class Soldier : MonoBehaviour
 
         if (Health == 0)
         {
-            if(gameObject.CompareTag("enemy") || gameObject.CompareTag("enemygate")) GameManager.Instance.Addmoney(priceDrop);
+            if(gameObject.CompareTag("ally")) GameManager.Instance.AI.Money += priceDrop;
 
             StopJump();
 

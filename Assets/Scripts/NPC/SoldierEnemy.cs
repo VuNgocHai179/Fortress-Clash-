@@ -626,7 +626,7 @@ protected virtual void FindTarget()
 
         if (Health == 0)
         {
-            if(gameObject.CompareTag("ally") || gameObject.CompareTag("allygate")) GameManager.Instance.Addmoney(priceDrop);
+            if(gameObject.CompareTag("enemy")) GameManager.Instance.Addmoney(priceDrop);
 
             StopJump();
 

@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 4950630341156007895}
   m_Layer: 0
   m_Name: SpearManEnemy
-  m_TagString: Untagged
+  m_TagString: enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -110,7 +110,7 @@ MonoBehaviour:
   AttackRange: 1.5
   Health: 0
   Damage: 0
-  Price: 0
+  Price: 245
   priceDrop: 0
   JumpDistance: 0.5
   JumpHeight: 0.25

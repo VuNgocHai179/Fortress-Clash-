@@ -11,9 +11,9 @@ PYTORCH_MODEL = "fortress_ai_model.pth"
 
 ONNX_MODEL = "fortress_ai_model.onnx"
 
-INPUT_SIZE = 18
+INPUT_SIZE = 19
 
-OUTPUT_SIZE = 4
+OUTPUT_SIZE = 7
 
 
 # ============================================================
@@ -36,7 +36,6 @@ model.load_state_dict(
         map_location="cpu"
     )
 )
-
 
 model.eval()
 
@@ -91,6 +90,16 @@ torch.onnx.export(
 print("========================================")
 print("ONNX EXPORT SUCCESS")
 print("========================================")
+
+print(
+    "Input size:",
+    INPUT_SIZE
+)
+
+print(
+    "Output size:",
+    OUTPUT_SIZE
+)
 
 print(
     "Saved:",

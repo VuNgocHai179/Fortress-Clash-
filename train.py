@@ -23,7 +23,7 @@ SCALER_PATH = "fortress_ai_scaler.pkl"
 
 BATCH_SIZE = 16
 
-EPOCHS = 200
+EPOCHS = 1000
 
 LEARNING_RATE = 0.001
 
@@ -45,11 +45,26 @@ print(df.head())
 
 
 # ============================================================
-# 2. INPUT / OUTPUT
+# 2. CHECK DATASET
+# ============================================================
+
+print("\n========================================")
+print("DATASET INFO")
+print("========================================")
+
+print(df.dtypes)
+
+print("\nMissing values:")
+
+print(df.isnull().sum())
+
+
+# ============================================================
+# 3. INPUT / OUTPUT
 # ============================================================
 
 X = df.drop(
-    ["Action", "State"],
+    ["Action"],
     axis=1
 )
 
@@ -57,37 +72,58 @@ y = df["Action"]
 
 
 print("\n========================================")
-print("ACTIONS")
+print("FEATURES")
 print("========================================")
 
-print(y.value_counts())
+print("Input features:", X.shape[1])
+
+for i, column in enumerate(X.columns):
+
+    print(
+        i,
+        "->",
+        column
+    )
 
 
 # ============================================================
-# 3. ENCODE ACTION
+# 4. FIXED ACTION MAPPING
 # ============================================================
 
-# Chuyển Action từ text -> số
-#
-# Ví dụ:
-#
-# CHOOSECATAPULT -> 0
-# CHOOSEARCHER   -> 1
-# CHOOSESPEARMAN -> 2
-# CHOOSESWORD    -> 3
+actions = [
 
-actions = sorted(
-    y.unique()
-)
+    "WAITING",
+
+    "CHOOSESWORD",
+
+    "CHOOSEARCHER",
+
+    "CHOOSESLINGER",
+
+    "CHOOSESPEARMAN",
+
+    "CHOOSESOLDIER",
+
+    "CHOOSECATAPULT"
+
+]
+
 
 action_to_id = {
+
     action: i
+
     for i, action in enumerate(actions)
+
 }
 
+
 id_to_action = {
+
     i: action
+
     for action, i in action_to_id.items()
+
 }
 
 
@@ -95,14 +131,31 @@ print("\n========================================")
 print("ACTION MAPPING")
 print("========================================")
 
-for action, index in action_to_id.items():
+for i in range(len(actions)):
 
     print(
-        index,
+        i,
         "->",
-        action
+        id_to_action[i]
     )
 
+
+# ============================================================
+# CHECK UNKNOWN ACTION
+# ============================================================
+
+unknown_actions = set(y.unique()) - set(actions)
+
+if unknown_actions:
+
+    raise ValueError(
+        f"Unknown actions found: {unknown_actions}"
+    )
+
+
+# ============================================================
+# ENCODE ACTION
+# ============================================================
 
 y = y.map(
     action_to_id
@@ -110,7 +163,7 @@ y = y.map(
 
 
 # ============================================================
-# 4. CONVERT TO NUMPY
+# 5. CONVERT DATA TYPE
 # ============================================================
 
 X = X.astype("float32")
@@ -119,98 +172,151 @@ y = y.astype("int64")
 
 
 # ============================================================
-# 5. TRAIN / TEST SPLIT
+# 6. TRAIN / TEST SPLIT
 # ============================================================
 
 X_train, X_test, y_train, y_test = train_test_split(
 
     X,
+
     y,
 
-    test_size=0.2,
+    test_size=0.1,
 
     random_state=42,
 
     stratify=y
+
+)
+
+
+print("\n========================================")
+print("SPLIT")
+print("========================================")
+
+print(
+    "Train:",
+    len(X_train)
+)
+
+print(
+    "Test:",
+    len(X_test)
 )
 
 
 # ============================================================
-# 6. STANDARDIZE INPUT
+# 7. STANDARDIZE
 # ============================================================
 
 scaler = StandardScaler()
 
+
 X_train = scaler.fit_transform(
     X_train
 )
+
 
 X_test = scaler.transform(
     X_test
 )
 
 
-# Lưu scaler
+# ============================================================
+# SAVE SCALER
+# ============================================================
+
 joblib.dump(
     scaler,
     SCALER_PATH
 )
 
 
+print("\nScaler saved:", SCALER_PATH)
+
+
 # ============================================================
-# 7. CONVERT TO PYTORCH TENSOR
+# 8. PYTORCH TENSORS
 # ============================================================
 
 X_train_tensor = torch.tensor(
+
     X_train,
+
     dtype=torch.float32
+
 )
+
 
 y_train_tensor = torch.tensor(
+
     y_train.values,
+
     dtype=torch.long
+
 )
+
 
 X_test_tensor = torch.tensor(
+
     X_test,
+
     dtype=torch.float32
+
 )
 
+
 y_test_tensor = torch.tensor(
+
     y_test.values,
+
     dtype=torch.long
+
 )
 
 
 # ============================================================
-# 8. DATA LOADER
+# 9. DATA LOADER
 # ============================================================
 
 train_dataset = TensorDataset(
+
     X_train_tensor,
+
     y_train_tensor
+
 )
 
+
 train_loader = DataLoader(
+
     train_dataset,
+
     batch_size=BATCH_SIZE,
+
     shuffle=True
+
 )
 
 
 # ============================================================
-# 9. CREATE MLP
+# 10. MODEL
 # ============================================================
 
 class FortressAI(nn.Module):
 
     def __init__(
+
         self,
+
         input_size,
+
         output_size
+
     ):
 
         super().__init__()
+
 
         self.network = nn.Sequential(
 
@@ -221,12 +327,14 @@ class FortressAI(nn.Module):
 
             nn.ReLU(),
 
+
             nn.Linear(
                 64,
                 32
             ),
 
             nn.ReLU(),
+
 
             nn.Linear(
                 32,
@@ -242,7 +350,7 @@ class FortressAI(nn.Module):
 
 
 # ============================================================
-# 10. CREATE MODEL
+# 11. CREATE MODEL
 # ============================================================
 
 input_size = X_train.shape[1]
@@ -250,37 +358,51 @@ input_size = X_train.shape[1]
 output_size = len(actions)
 
 
-model = FortressAI(
-    input_size,
-    output_size
-)
-
-
 print("\n========================================")
 print("MODEL")
 print("========================================")
 
-print("Input:", input_size)
+print(
+    "Input:",
+    input_size
+)
 
-print("Output:", output_size)
+print(
+    "Output:",
+    output_size
+)
+
+
+model = FortressAI(
+
+    input_size,
+
+    output_size
+
+)
+
 
 print(model)
 
 
 # ============================================================
-# 11. LOSS + OPTIMIZER
+# 12. LOSS
 # ============================================================
 
 criterion = nn.CrossEntropyLoss()
 
+
 optimizer = torch.optim.Adam(
+
     model.parameters(),
+
     lr=LEARNING_RATE
+
 )
 
 
 # ============================================================
-# 12. TRAIN
+# 13. TRAIN
 # ============================================================
 
 print("\n========================================")
@@ -298,53 +420,69 @@ for epoch in range(EPOCHS):
     for batch_X, batch_y in train_loader:
 
         # Forward
+
         outputs = model(
             batch_X
         )
 
 
         # Loss
+
         loss = criterion(
+
             outputs,
+
             batch_y
+
         )
 
 
         # Clear gradient
+
         optimizer.zero_grad()
 
 
         # Backpropagation
+
         loss.backward()
 
 
-        # Update
+        # Update weights
+
         optimizer.step()
 
 
         total_loss += loss.item()
 
 
-    if (
-        epoch + 1
-    ) % 10 == 0:
+    if (epoch + 1) % 10 == 0:
 
         average_loss = (
+
             total_loss
+
             /
+
             len(train_loader)
+
         )
 
+
         print(
+
             f"Epoch "
+
             f"{epoch + 1:3d}/{EPOCHS}"
+
             f" - Loss: "
+
             f"{average_loss:.6f}"
+
         )
 
 
 # ============================================================
-# 13. EVALUATE
+# 14. EVALUATE
 # ============================================================
 
 model.eval()
@@ -353,12 +491,18 @@ model.eval()
 with torch.no_grad():
 
     outputs = model(
+
         X_test_tensor
+
     )
 
+
     predictions = torch.argmax(
+
         outputs,
+
         dim=1
+
     )
 
 
@@ -366,8 +510,11 @@ predictions = predictions.numpy()
 
 
 accuracy = accuracy_score(
+
     y_test,
+
     predictions
+
 )
 
 
@@ -375,30 +522,48 @@ print("\n========================================")
 print("RESULT")
 print("========================================")
 
+
 print(
-    f"Accuracy: {accuracy:.4f}"
+
+    f"Accuracy: "
+
+    f"{accuracy:.4f}"
+
 )
 
 
 print("\nClassification Report:")
 
+
 print(
+
     classification_report(
+
         y_test,
+
         predictions,
+
+        labels=list(range(len(actions))),
+
         target_names=actions,
+
         zero_division=0
+
     )
+
 )
 
 
 # ============================================================
-# 14. SAVE PYTORCH MODEL
+# 15. SAVE MODEL
 # ============================================================
 
 torch.save(
+
     model.state_dict(),
+
     MODEL_PATH
+
 )
 
 
@@ -406,12 +571,20 @@ print("\n========================================")
 print("SAVE")
 print("========================================")
 
-print(
-    "PyTorch model:",
-    MODEL_PATH
-)
 
 print(
+
+    "PyTorch model:",
+
+    MODEL_PATH
+
+)
+
+
+print(
+
     "Scaler:",
+
     SCALER_PATH
+
 )

@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 3965040819146147183}
   m_Layer: 0
   m_Name: SoldierEnemy
-  m_TagString: Untagged
+  m_TagString: enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -103,14 +103,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2143b3cc0c764084bad11802e2d83801, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Velocity: 0
+  Velocity: 20
   BlueSide: 0
   Destination: {x: 0, y: 0}
   SpawnPosition: {x: 0, y: 0}
   AttackRange: 1.5
   Health: 0
   Damage: 0
-  Price: 0
+  Price: 50
   priceDrop: 0
   JumpDistance: 0.5
   JumpHeight: 0.25
@@ -155,7 +155,7 @@ Animator:
   m_GameObject: {fileID: 4052393545702580210}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 79b22363e7edb3f4ab566a0ef276d55d, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0

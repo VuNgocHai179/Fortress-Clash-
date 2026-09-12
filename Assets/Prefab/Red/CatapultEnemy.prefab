@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 7509125963087748996}
   m_Layer: 0
   m_Name: CatapultEnemy
-  m_TagString: Untagged
+  m_TagString: enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -103,14 +103,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e75ce0675a5cf0b4fad7eee164c213b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Velocity: 0
+  Velocity: 20
   BlueSide: 0
   Destination: {x: 0, y: 0}
   SpawnPosition: {x: 0, y: 0}
   AttackRange: 1.5
-  Health: 0
-  Damage: 0
-  Price: 0
+  Health: 2
+  Damage: 2
+  Price: 500
   priceDrop: 0
   JumpDistance: 0.5
   JumpHeight: 0.25
@@ -119,7 +119,7 @@ MonoBehaviour:
   AllyCheckDistance: 0.7
   AllyCheckRadius: 0.25
   ArcherAllyCheckDistance: 1.5
-  ArcherAllyCheckRadius: 0.35
+  ArcherAllyCheckRadius: 0.5
 --- !u!50 &3252517207495155853
 Rigidbody2D:
   serializedVersion: 5

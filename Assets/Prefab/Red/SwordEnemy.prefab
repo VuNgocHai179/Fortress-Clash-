@@ -110,7 +110,7 @@ MonoBehaviour:
   AttackRange: 1.5
   Health: 1000
   Damage: 0
-  Price: 0
+  Price: 682
   priceDrop: 0
   JumpDistance: 5
   JumpHeight: 0.25

@@ -26,6 +26,7 @@ public struct AIHas
     public int SlingerMoney;
     public int SpearManMoney;
     public int CatapultMoney;
+    public int SoldierMoney;
     public int Money;
 }
 
@@ -60,7 +61,7 @@ public class GameManager : Singleton<GameManager>
 
     // Thời gian delay giữa mỗi lần chọn lính
     [SerializeField]
-    private float chooseDelay = 1f;
+    private float chooseDelay = 5f;
 
     // Đang trong thời gian chờ hay không
     private bool canChoose = true;
@@ -88,6 +89,8 @@ public class GameManager : Singleton<GameManager>
             yield return new WaitForSeconds(1f);
 
             Money += moneyPersecond;
+            AI.Money += moneyPersecond;
+            AIMoney = AI.Money;
 
             numberMoney.SetText(Money.ToString());
         }
@@ -269,12 +272,11 @@ public class GameManager : Singleton<GameManager>
 
     private void spawnEnemy(GameObject spawn)
     {
-        if (!CanChoose())
-            return;
-
         int price = spawn.GetComponent<SoldierEnemy>().Price;
+        if(AIMoney<price) return;
 
         AI.Money -= price;
+        AIMoney = AI.Money;
 
         GameObject Spawn = Instantiate(spawn,
         RedGate.transform.position,
@@ -294,7 +296,7 @@ public class GameManager : Singleton<GameManager>
         AI.SlingerMoney = RedSlinger.GetComponent<SoldierEnemy>().Price;
         AI.CatapultMoney = RedCatapult.GetComponent<SoldierEnemy>().Price;
         AI.SpearManMoney = RedSpearMan.GetComponent<SoldierEnemy>().Price;
-        AI.SoldierNumber = RedSoldier.GetComponent<SoldierEnemy>().Price;
+        AI.SoldierMoney = RedSoldier.GetComponent<SoldierEnemy>().Price;
         AI.Money = AIMoney;
     }
 }
