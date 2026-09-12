@@ -1092,6 +1092,51 @@ Transform:
   - {fileID: 1059789915}
   m_Father: {fileID: 519420032}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1003406537
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1003406539}
+  - component: {fileID: 1003406538}
+  m_Layer: 0
+  m_Name: AIController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1003406538
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1003406537}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39dcc3a3b10323a4db580f56ceafa929, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  modelAsset: {fileID: 5022602860645237092, guid: 658f8e312b4e9274c9614f098548d3bc, type: 3}
+--- !u!4 &1003406539
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1003406537}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.1792119, y: 11.078783, z: -0.15239768}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1059789914
 GameObject:
   m_ObjectHideFlags: 0
@@ -1258,10 +1303,20 @@ MonoBehaviour:
   Sword: {fileID: 1348272604327182895, guid: bcef0755a0de6094f88816ff7809b9a6, type: 3}
   Archer: {fileID: 2515233314138207333, guid: afb630842792418458763d21693d8a71, type: 3}
   Slinger: {fileID: 5182937461928374001, guid: 43ab3acb9c224634aa493a83d17dde10, type: 3}
+  SpearMan: {fileID: 8136004846990613505, guid: 0255e627838691547948c105cc5a3452, type: 3}
+  Soldier: {fileID: 5610560448965575598, guid: fc15fcaa459e52c4b84cdb513e44997f, type: 3}
+  Catapult: {fileID: 345795915646352888, guid: 0b82774a156b8a74f993264f4b3d12b9, type: 3}
+  RedSword: {fileID: 2689597940771274120, guid: f90c28ee214a6d044ac7429ef823c20e, type: 3}
+  RedArcher: {fileID: 574756825043359204, guid: 7ba98667f1edbb44291f9360fbb03f23, type: 3}
+  RedSlinger: {fileID: 5911374843190955309, guid: 2a9037f120fe23143bec513874e27841, type: 3}
+  RedSpearMan: {fileID: 209640169011585648, guid: 1222ba0bdc2275b41b6099155ac98ef0, type: 3}
+  RedSoldier: {fileID: 4052393545702580210, guid: 117cca01fda8b6b47a4a133bb6a24396, type: 3}
+  RedCatapult: {fileID: 3518016113484996527, guid: c4e46100029ea7f43a65359125a4afbe, type: 3}
   Money: 100
+  AIMoney: 100
   moneyPersecond: 5
   numberMoney: {fileID: 923750884}
-  chooseDelay: 1.5
+  chooseDelay: 0
 --- !u!4 &1081867117
 Transform:
   m_ObjectHideFlags: 0
@@ -1291,7 +1346,7 @@ GameObject:
   - component: {fileID: 1216798963}
   m_Layer: 0
   m_Name: gate
-  m_TagString: enemy
+  m_TagString: enemygate
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1396,8 +1451,8 @@ PolygonCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
+  m_IsTrigger: 1
+  m_UsedByEffector: 1
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
@@ -1437,6 +1492,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Health: 100
   oppositeSide: blue
+  checkRadius: 2
 --- !u!1 &1444967526
 GameObject:
   m_ObjectHideFlags: 0
@@ -2278,7 +2334,7 @@ GameObject:
   - component: {fileID: 1742506508}
   m_Layer: 0
   m_Name: gate
-  m_TagString: Untagged
+  m_TagString: allygate
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2367,6 +2423,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Health: 100
   oppositeSide: red
+  checkRadius: 2
 --- !u!60 &1742506508
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -2397,7 +2454,7 @@ PolygonCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -3086,3 +3143,4 @@ SceneRoots:
   - {fileID: 1444967527}
   - {fileID: 1894524200}
   - {fileID: 1081867117}
+  - {fileID: 1003406539}
