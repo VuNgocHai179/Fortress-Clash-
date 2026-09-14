@@ -1,93 +1,338 @@
 using System.Collections;
-using FortressClash.Core;
-using TMPro;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using TMPro;
 
-public class GameManagerMultiplayer : GameManager
+public class GameManagerMultiplayer : NetworkBehaviour
 {
+    // =========================================================
+    // NETWORK
+    // =========================================================
+
     private NetworkManager networkManager;
 
-    protected override void Awake()
-    {
-        base.Awake();
 
+    // =========================================================
+    // UI
+    // =========================================================
+
+    [Header("Choosing UI")]
+    [SerializeField] private GameObject BlueChoosing;
+    [SerializeField] private GameObject RedChoosing;
+    [SerializeField] private TextMeshProUGUI numberMoney;
+
+
+    // =========================================================
+    // GATE
+    // =========================================================
+
+    [Header("Gates")]
+    [SerializeField] private GameObject BlueGate;
+    [SerializeField] private GameObject RedGate;
+
+
+    // =========================================================
+    // BLUE PREFABS
+    // =========================================================
+
+    [Header("Blue Prefabs")]
+    [SerializeField] private GameObject Sword;
+    [SerializeField] private GameObject Archer;
+    [SerializeField] private GameObject Slinger;
+    [SerializeField] private GameObject SpearMan;
+    [SerializeField] private GameObject Soldier;
+    [SerializeField] private GameObject Catapult;
+
+
+    // =========================================================
+    // RED PREFABS
+    // =========================================================
+
+    [Header("Red Prefabs")]
+    [SerializeField] private GameObject RedSword;
+    [SerializeField] private GameObject RedArcher;
+    [SerializeField] private GameObject RedSlinger;
+    [SerializeField] private GameObject RedSpearMan;
+    [SerializeField] private GameObject RedSoldier;
+    [SerializeField] private GameObject RedCatapult;
+
+
+    // =========================================================
+    // MONEY
+    // =========================================================
+
+    [Header("Money")]
+    [SerializeField] private int Money = 1000;
+    [SerializeField] private int ClientMoney = 1000;
+    [SerializeField] private int moneyPersecond = 10;
+
+
+    // =========================================================
+    // CHOOSE COOLDOWN
+    // =========================================================
+
+    [Header("Choose Cooldown")]
+    [SerializeField] private float chooseDelay = 5f;
+
+    private bool canChoose = true;
+
+
+    // =========================================================
+    // AWAKE
+    // =========================================================
+
+    private void Awake()
+    {
         networkManager = NetworkManager.Singleton;
     }
 
+
+    // =========================================================
+    // START
+    // =========================================================
+
     private void Start()
     {
+        if (networkManager == null)
+        {
+            Debug.LogError(
+                "[MULTIPLAYER] NetworkManager.Singleton không tồn tại!"
+            );
+
+            return;
+        }
+
         Debug.Log(
-            $"[MULTIPLAYER] " +
-            $"ClientId = {networkManager.LocalClientId}, " +
-            $"IsHost = {networkManager.IsHost}, " +
-            $"IsClient = {networkManager.IsClient}, " +
+            "[MULTIPLAYER]\n" +
+            $"ClientId = {networkManager.LocalClientId}\n" +
+            $"IsHost = {networkManager.IsHost}\n" +
+            $"IsClient = {networkManager.IsClient}\n" +
             $"IsServer = {networkManager.IsServer}"
         );
+
+
+        // =====================================================
+        // BLUE = HOST
+        // RED = CLIENT
+        // =====================================================
+
+        if (networkManager.IsHost)
+        {
+            if (BlueChoosing != null)
+                BlueChoosing.SetActive(true);
+
+            if (RedChoosing != null)
+                RedChoosing.SetActive(false);
+        }
+        else if (
+            networkManager.IsClient &&
+            !networkManager.IsHost
+        )
+        {
+            if (BlueChoosing != null)
+                BlueChoosing.SetActive(false);
+
+            if (RedChoosing != null)
+                RedChoosing.SetActive(true);
+        }
+
+
+        // =====================================================
+        // MONEY UI
+        // =====================================================
+
+        UpdateMoneyUI();
+
+
+        // =====================================================
+        // SERVER QUẢN LÝ TIỀN
+        // =====================================================
+        StartCoroutine(AddMoneyPerSecond());
     }
+
 
     // =========================================================
-    // BLUE PLAYER
+    // ON NETWORK SPAWN
     // =========================================================
 
-    public override void SwordChoosen()
+    public override void OnNetworkSpawn()
     {
-        if (!networkManager.IsClient)
-            return;
+        base.OnNetworkSpawn();
 
-        SpawnBlueSoldierServerRpc(0);
+        Debug.Log(
+            "[MULTIPLAYER] GameManagerMultiplayer OnNetworkSpawn\n" +
+            $"IsServer = {IsServer}\n" +
+            $"IsClient = {IsClient}\n" +
+            $"IsHost = {IsHost}\n" +
+            $"IsSpawned = {IsSpawned}\n" +
+            $"LocalClientId = {NetworkManager.Singleton.LocalClientId}"
+        );
+
+
+        // =====================================================
+        // BLUE = HOST
+        // RED = CLIENT
+        // =====================================================
+
+        if (IsHost)
+        {
+            if (BlueChoosing != null)
+                BlueChoosing.SetActive(true);
+
+            if (RedChoosing != null)
+                RedChoosing.SetActive(false);
+        }
+        else if (IsClient)
+        {
+            if (BlueChoosing != null)
+                BlueChoosing.SetActive(false);
+
+            if (RedChoosing != null)
+                RedChoosing.SetActive(true);
+        }
     }
 
-    public override void ArcherChoosen()
-    {
-        if (!networkManager.IsClient)
-            return;
-
-        SpawnBlueSoldierServerRpc(1);
-    }
-
-    public override void SpearChoosen()
-    {
-        if (!networkManager.IsClient)
-            return;
-
-        SpawnBlueSoldierServerRpc(2);
-    }
-
-    public override void SlingshotChoosen()
-    {
-        if (!networkManager.IsClient)
-            return;
-
-        SpawnBlueSoldierServerRpc(3);
-    }
-
-    public override void SoldierChoosen()
-    {
-        if (!networkManager.IsClient)
-            return;
-
-        SpawnBlueSoldierServerRpc(4);
-    }
-
-    public override void CatapultChoosen()
-    {
-        if (!networkManager.IsClient)
-            return;
-
-        SpawnBlueSoldierServerRpc(5);
-    }
 
     // =========================================================
-    // SERVER RPC - BLUE
+    // MONEY PER SECOND
     // =========================================================
 
-    [ServerRpc(RequireOwnership = false)]
-    private void SpawnBlueSoldierServerRpc(
-        int soldierType,
-        ServerRpcParams rpcParams = default)
+    private IEnumerator AddMoneyPerSecond()
     {
+        while (true)
+        {
+            yield return new WaitForSeconds(1f);
+
+            Money += moneyPersecond;
+            ClientMoney += moneyPersecond;
+
+            UpdateMoneyUI();
+        }
+    }
+
+
+    // =========================================================
+    // MONEY UI
+    // =========================================================
+
+    private void UpdateMoneyUI()
+    {
+        if (numberMoney == null)
+            return;
+        
+        if(IsHost)
+        {
+            numberMoney.SetText(
+                Money.ToString()
+            );
+        }
+        else if(IsClient)
+        {
+            numberMoney.SetText(
+                ClientMoney.ToString()
+            );
+        }
+    }
+
+    [ClientRpc]
+    private void UpdateClientMoneyUIClientRpc(int money)
+    {
+        ClientMoney = money;
+        UpdateMoneyUI();
+    }
+
+
+    // =========================================================
+    // BLUE
+    // BLUE = HOST
+    // =========================================================
+
+    public void SwordChoosen()
+    {
+        if (!IsHost)
+            return;
+
+        SpawnBlueSoldier(0);
+    }
+
+
+    public void ArcherChoosen()
+    {
+        if (!IsHost)
+            return;
+
+        SpawnBlueSoldier(1);
+    }
+
+
+    public void SpearChoosen()
+    {
+        if (!IsHost)
+            return;
+
+        SpawnBlueSoldier(2);
+    }
+
+
+    public void SlingshotChoosen()
+    {
+        if (!IsHost)
+            return;
+
+        SpawnBlueSoldier(3);
+    }
+
+
+    public void SoldierChoosen()
+    {
+        if (!IsHost)
+            return;
+
+        SpawnBlueSoldier(4);
+    }
+
+
+    public void CatapultChoosen()
+    {
+        if (!IsHost)
+            return;
+
+        SpawnBlueSoldier(5);
+    }
+
+
+    // =========================================================
+    // BLUE SPAWN
+    // =========================================================
+
+    private void SpawnBlueSoldier(int soldierType)
+    {
+        // =====================================================
+        // SERVER CHECK
+        // =====================================================
+
+        if (!IsServer)
+        {
+            Debug.LogError(
+                "[MULTIPLAYER] Blue spawn phải chạy trên Server!"
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // COOLDOWN
+        // =====================================================
+
+        if (!CanChoose())
+            return;
+
+
+        // =====================================================
+        // PREFAB
+        // =====================================================
+
         GameObject prefab = GetBluePrefab(soldierType);
 
         if (prefab == null)
@@ -99,52 +344,104 @@ public class GameManagerMultiplayer : GameManager
             return;
         }
 
+
         Soldier soldierPrefab =
             prefab.GetComponent<Soldier>();
 
         if (soldierPrefab == null)
         {
             Debug.LogError(
-                $"[MULTIPLAYER] {prefab.name} không có Soldier component!"
+                $"{prefab.name} không có Soldier!"
             );
 
             return;
         }
+
+
+        // =====================================================
+        // NETWORK OBJECT
+        // =====================================================
+
+        NetworkObject prefabNetworkObject =
+            prefab.GetComponent<NetworkObject>();
+
+        if (prefabNetworkObject == null)
+        {
+            Debug.LogError(
+                $"{prefab.name} không có NetworkObject!"
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // GATE
+        // =====================================================
+
+        Gate gate =
+            BlueGate.GetComponent<Gate>();
+
+        if (gate == null)
+        {
+            Debug.LogError(
+                "BlueGate không có Gate!"
+            );
+
+            return;
+        }
+
+
+        if (!gate.CheckAroundHasSoldier())
+            return;
+
+
+        // =====================================================
+        // MONEY
+        // =====================================================
 
         int price = soldierPrefab.Price;
 
-        // Kiểm tra tiền
         if (Money < price)
         {
             Debug.Log(
-                "[MULTIPLAYER] Không đủ tiền!"
+                "[MULTIPLAYER] BLUE không đủ tiền!"
             );
 
             return;
         }
 
-        // Kiểm tra Gate
-        if (!BlueGate.GetComponent<Gate>()
-            .CheckAroundHasSoldier())
-        {
-            return;
-        }
-
-        // Trừ tiền
         Money -= price;
 
-        // Tăng số lượng
-        AddBlueSoldierCount(soldierType);
+        UpdateMoneyUI();
 
-        // Spawn
-        GameObject spawnedObject = Instantiate(
-            prefab,
-            BlueGate.transform.position,
-            Quaternion.identity
-        );
+
+        // =====================================================
+        // INSTANTIATE
+        // =====================================================
+
+        GameObject spawnedObject =
+            Instantiate(
+                prefab,
+                BlueGate.transform.position,
+                Quaternion.identity
+            );
+
 
         Soldier soldier =
             spawnedObject.GetComponent<Soldier>();
+
+        if (soldier == null)
+        {
+            Destroy(spawnedObject);
+
+            Debug.LogError(
+                $"{prefab.name} không có Soldier!"
+            );
+
+            return;
+        }
+
 
         soldier.Destination =
             RedGate.transform.position;
@@ -152,71 +449,144 @@ public class GameManagerMultiplayer : GameManager
         soldier.SpawnPosition =
             BlueGate.transform.position;
 
+
+        // =====================================================
+        // NETWORK SPAWN
+        // =====================================================
+
         NetworkObject networkObject =
             spawnedObject.GetComponent<NetworkObject>();
 
         if (networkObject == null)
         {
-            Debug.LogError(
-                $"[MULTIPLAYER] {prefab.name} không có NetworkObject!"
-            );
-
             Destroy(spawnedObject);
+
+            Debug.LogError(
+                $"{prefab.name} không có NetworkObject!"
+            );
 
             return;
         }
 
+
         networkObject.Spawn();
+
+        StartCoroutine(
+            ChooseCooldown()
+        );
+
 
         Debug.Log(
             $"[MULTIPLAYER] BLUE spawn {prefab.name}"
         );
     }
 
+
     // =========================================================
-    // RED PLAYER
+    // RED
+    // RED = CLIENT
     // =========================================================
 
     public void RedSwordChoosenMultiplayer()
     {
+        if (!IsClient)
+            return;
+
         SpawnRedSoldierServerRpc(0);
     }
 
+
     public void RedArcherChoosenMultiplayer()
     {
+        if (!IsClient)
+            return;
+
         SpawnRedSoldierServerRpc(1);
     }
 
+
     public void RedSlingerChoosenMultiplayer()
     {
+        if (!IsClient)
+            return;
+
         SpawnRedSoldierServerRpc(2);
     }
 
+
     public void RedSpearManChoosenMultiplayer()
     {
+        if (!IsClient)
+            return;
+
         SpawnRedSoldierServerRpc(3);
     }
 
+
     public void RedSoldierChoosenMultiplayer()
     {
+        if (!IsClient)
+            return;
+
         SpawnRedSoldierServerRpc(4);
     }
 
+
     public void RedCatapultChoosenMultiplayer()
     {
+        if (!IsClient)
+            return;
+
         SpawnRedSoldierServerRpc(5);
     }
 
+
     // =========================================================
-    // SERVER RPC - RED
+    // RED SERVER RPC
     // =========================================================
 
     [ServerRpc(RequireOwnership = false)]
     private void SpawnRedSoldierServerRpc(
         int soldierType,
-        ServerRpcParams rpcParams = default)
+        ServerRpcParams rpcParams = default
+    )
     {
-        GameObject prefab = GetRedPrefab(soldierType);
+        // =====================================================
+        // DEBUG
+        // =====================================================
+
+        Debug.Log(
+            "[MULTIPLAYER] ============================\n" +
+            "[MULTIPLAYER] RED SPAWN RPC\n" +
+            $"IsServer = {IsServer}\n" +
+            $"IsClient = {IsClient}\n" +
+            $"IsHost = {IsHost}\n" +
+            $"IsSpawned = {IsSpawned}\n" +
+            $"SenderClientId = {rpcParams.Receive.SenderClientId}\n" +
+            "[MULTIPLAYER] ============================"
+        );
+
+
+        // =====================================================
+        // SERVER CHECK
+        // =====================================================
+
+        if (!IsServer)
+        {
+            Debug.LogError(
+                "[MULTIPLAYER] RED RPC KHÔNG CHẠY TRÊN SERVER!"
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // PREFAB
+        // =====================================================
+
+        GameObject prefab =
+            GetRedPrefab(soldierType);
 
         if (prefab == null)
         {
@@ -227,22 +597,72 @@ public class GameManagerMultiplayer : GameManager
             return;
         }
 
+
         SoldierEnemy soldierPrefab =
             prefab.GetComponent<SoldierEnemy>();
 
         if (soldierPrefab == null)
         {
             Debug.LogError(
-                $"[MULTIPLAYER] {prefab.name} không có SoldierEnemy!"
+                $"{prefab.name} không có SoldierEnemy!"
             );
 
             return;
         }
 
-        int price = soldierPrefab.Price;
 
-        // Red dùng AIMoney làm tiền
-        if (AIMoney < price)
+        // =====================================================
+        // NETWORK OBJECT
+        // =====================================================
+
+        NetworkObject prefabNetworkObject =
+            prefab.GetComponent<NetworkObject>();
+
+        if (prefabNetworkObject == null)
+        {
+            Debug.LogError(
+                $"{prefab.name} không có NetworkObject!"
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // GATE
+        // =====================================================
+
+        Gate gate =
+            RedGate.GetComponent<Gate>();
+
+        if (gate == null)
+        {
+            Debug.LogError(
+                "RedGate không có Gate!"
+            );
+
+            return;
+        }
+
+
+        if (!gate.CheckAroundHasSoldier())
+        {
+            Debug.Log(
+                "[MULTIPLAYER] RED Gate đang bị chặn!"
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // MONEY
+        // =====================================================
+
+        int price =
+            soldierPrefab.Price;
+
+        if (ClientMoney < price)
         {
             Debug.Log(
                 "[MULTIPLAYER] RED không đủ tiền!"
@@ -251,26 +671,37 @@ public class GameManagerMultiplayer : GameManager
             return;
         }
 
-        // Kiểm tra Gate
-        if (!RedGate.GetComponent<Gate>()
-            .CheckAroundHasSoldier())
-        {
-            return;
-        }
+        ClientMoney -= price;
 
-        AIMoney -= price;
-        AI.Money = AIMoney;
+        UpdateClientMoneyUIClientRpc(ClientMoney);
 
-        AddRedSoldierCount(soldierType);
 
-        GameObject spawnedObject = Instantiate(
-            prefab,
-            RedGate.transform.position,
-            Quaternion.identity
-        );
+        // =====================================================
+        // INSTANTIATE
+        // =====================================================
+
+        GameObject spawnedObject =
+            Instantiate(
+                prefab,
+                RedGate.transform.position,
+                Quaternion.identity
+            );
+
 
         SoldierEnemy soldier =
             spawnedObject.GetComponent<SoldierEnemy>();
+
+        if (soldier == null)
+        {
+            Destroy(spawnedObject);
+
+            Debug.LogError(
+                $"{prefab.name} không có SoldierEnemy!"
+            );
+
+            return;
+        }
+
 
         soldier.Destination =
             BlueGate.transform.position;
@@ -278,26 +709,43 @@ public class GameManagerMultiplayer : GameManager
         soldier.SpawnPosition =
             RedGate.transform.position;
 
+
+        // =====================================================
+        // NETWORK OBJECT
+        // =====================================================
+
         NetworkObject networkObject =
             spawnedObject.GetComponent<NetworkObject>();
 
         if (networkObject == null)
         {
-            Debug.LogError(
-                $"[MULTIPLAYER] {prefab.name} không có NetworkObject!"
-            );
-
             Destroy(spawnedObject);
+
+            Debug.LogError(
+                $"{prefab.name} không có NetworkObject!"
+            );
 
             return;
         }
 
-        networkObject.Spawn();
+
+        // =====================================================
+        // SERVER SPAWN + RED OWNERSHIP
+        // =====================================================
+
+        networkObject.SpawnWithOwnership(
+            rpcParams.Receive.SenderClientId
+        );
+
 
         Debug.Log(
-            $"[MULTIPLAYER] RED spawn {prefab.name}"
+            $"[MULTIPLAYER] RED spawn thành công: " +
+            $"{prefab.name}\n" +
+            $"OwnerClientId = " +
+            $"{networkObject.OwnerClientId}"
         );
     }
+
 
     // =========================================================
     // GET BLUE PREFAB
@@ -330,6 +778,7 @@ public class GameManagerMultiplayer : GameManager
         }
     }
 
+
     // =========================================================
     // GET RED PREFAB
     // =========================================================
@@ -361,71 +810,34 @@ public class GameManagerMultiplayer : GameManager
         }
     }
 
+
     // =========================================================
-    // COUNT BLUE
+    // CHOOSE COOLDOWN
     // =========================================================
 
-    private void AddBlueSoldierCount(int type)
+    private bool CanChoose()
     {
-        switch (type)
+        if (!canChoose)
         {
-            case 0:
-                player.SwordNumber++;
-                break;
+            Debug.Log(
+                "[MULTIPLAYER] Đang cooldown!"
+            );
 
-            case 1:
-                player.ArcherNumber++;
-                break;
-
-            case 2:
-                player.SpearManNumber++;
-                break;
-
-            case 3:
-                player.SlingerNumber++;
-                break;
-
-            case 4:
-                player.SoldierNumber++;
-                break;
-
-            case 5:
-                player.CatapultNumber++;
-                break;
+            return false;
         }
+
+        return true;
     }
 
-    // =========================================================
-    // COUNT RED
-    // =========================================================
 
-    private void AddRedSoldierCount(int type)
+    private IEnumerator ChooseCooldown()
     {
-        switch (type)
-        {
-            case 0:
-                AI.SwordNumber++;
-                break;
+        canChoose = false;
 
-            case 1:
-                AI.ArcherNumber++;
-                break;
+        yield return new WaitForSeconds(
+            chooseDelay
+        );
 
-            case 2:
-                AI.SpearManNumber++;
-                break;
-
-            case 3:
-                AI.SlingerNumber++;
-                break;
-
-            case 4:
-                AI.SoldierNumber++;
-                break;
-
-            case 5:
-                AI.CatapultNumber++;
-                break;
-        }
+        canChoose = true;
     }
 }
