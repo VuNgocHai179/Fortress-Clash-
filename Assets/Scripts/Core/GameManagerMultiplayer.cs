@@ -219,14 +219,14 @@ public class GameManagerMultiplayer : NetworkBehaviour
     {
         if (numberMoney == null)
             return;
-        
-        if(IsHost)
+
+        if (IsHost)
         {
             numberMoney.SetText(
                 Money.ToString()
             );
         }
-        else if(IsClient)
+        else if (IsClient)
         {
             numberMoney.SetText(
                 ClientMoney.ToString()
@@ -345,8 +345,8 @@ public class GameManagerMultiplayer : NetworkBehaviour
         }
 
 
-        Soldier soldierPrefab =
-            prefab.GetComponent<Soldier>();
+        Slime soldierPrefab =
+            prefab.GetComponent<Slime>();
 
         if (soldierPrefab == null)
         {
@@ -400,7 +400,7 @@ public class GameManagerMultiplayer : NetworkBehaviour
         // MONEY
         // =====================================================
 
-        int price = soldierPrefab.Price;
+        int price = soldierPrefab.price;
 
         if (Money < price)
         {
@@ -428,8 +428,8 @@ public class GameManagerMultiplayer : NetworkBehaviour
             );
 
 
-        Soldier soldier =
-            spawnedObject.GetComponent<Soldier>();
+        Slime soldier =
+            spawnedObject.GetComponent<Slime>();
 
         if (soldier == null)
         {
@@ -542,14 +542,11 @@ public class GameManagerMultiplayer : NetworkBehaviour
 
 
     // =========================================================
-    // RED SERVER RPC
+    // RED SERVER RPC (Sử dụng chuẩn Rpc mới của Unity 6)
     // =========================================================
 
-    [ServerRpc(RequireOwnership = false)]
-    private void SpawnRedSoldierServerRpc(
-        int soldierType,
-        ServerRpcParams rpcParams = default
-    )
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void SpawnRedSoldierServerRpc(int soldierType)
     {
         // =====================================================
         // DEBUG
@@ -562,7 +559,6 @@ public class GameManagerMultiplayer : NetworkBehaviour
             $"IsClient = {IsClient}\n" +
             $"IsHost = {IsHost}\n" +
             $"IsSpawned = {IsSpawned}\n" +
-            $"SenderClientId = {rpcParams.Receive.SenderClientId}\n" +
             "[MULTIPLAYER] ============================"
         );
 
@@ -730,19 +726,15 @@ public class GameManagerMultiplayer : NetworkBehaviour
 
 
         // =====================================================
-        // SERVER SPAWN + RED OWNERSHIP
+        // SERVER SPAWN
         // =====================================================
 
-        networkObject.SpawnWithOwnership(
-            rpcParams.Receive.SenderClientId
-        );
+        networkObject.Spawn();
 
 
         Debug.Log(
             $"[MULTIPLAYER] RED spawn thành công: " +
-            $"{prefab.name}\n" +
-            $"OwnerClientId = " +
-            $"{networkObject.OwnerClientId}"
+            $"{prefab.name}"
         );
     }
 

@@ -510,7 +510,7 @@ protected virtual void FindTarget()
         // Tag ally = Enemy
         // ==========================================
 
-        if (col.CompareTag("ally") || col.CompareTag("allygate"))
+        if (col.CompareTag("ally"))
         {
             // Tìm từ TRÁI -> PHẢI
             if (x < closestEnemyX)
@@ -582,17 +582,10 @@ protected virtual void FindTarget()
         );
 
 
-        Soldier enemySoldier =
-            target.GetComponent<Soldier>();
+        Slime enemySoldier =
+            target.GetComponent<Slime>();
 
         Gate gate = target.GetComponent<Gate>();
-
-
-        if (enemySoldier != null)
-        {
-            enemySoldier.getHitted(Damage);
-        }
-        else if(gate != null) gate.getHitted(Damage);
 
 
         // Enemy đã chết / ra khỏi range

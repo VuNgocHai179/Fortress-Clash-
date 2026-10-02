@@ -11,9 +11,9 @@ GameObject:
   - component: {fileID: 5182937461928374002}
   - component: {fileID: 5182937461928374003}
   - component: {fileID: 5182937461928374004}
-  - component: {fileID: 5182937461928374005}
   - component: {fileID: 5182937461928374006}
   - component: {fileID: 5182937461928374007}
+  - component: {fileID: 4280979519251509355}
   m_Layer: 0
   m_Name: Slinger
   m_TagString: ally
@@ -31,8 +31,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3, y: 3, z: 3}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 5, y: 5, z: 5}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -79,8 +79,8 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_Sprite: {fileID: -9061095017673790032, guid: 54312b8762709d74aa2bb75f8b80973d, type: 3}
+  m_SortingOrder: 3
+  m_Sprite: {fileID: -584294941907073061, guid: 54312b8762709d74aa2bb75f8b80973d, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -99,7 +99,7 @@ Rigidbody2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5182937461928374001}
-  m_BodyType: 0
+  m_BodyType: 1
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
@@ -118,76 +118,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
---- !u!60 &5182937461928374005
-PolygonCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5182937461928374001}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1.01, y: 0.8}
-    newSize: {x: 1.05, y: 0.93}
-    adaptiveTilingThreshold: 0.5
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Points:
-    m_Paths:
-    - - {x: 0.505, y: -0.055}
-      - {x: 0.45499998, y: -0.015}
-      - {x: 0.515, y: 0.195}
-      - {x: 0.515, y: 0.265}
-      - {x: 0.505, y: 0.445}
-      - {x: 0.465, y: 0.465}
-      - {x: 0.36499998, y: 0.465}
-      - {x: 0.235, y: 0.285}
-      - {x: 0.205, y: 0.065}
-      - {x: 0.114999995, y: 0.285}
-      - {x: -0.055, y: 0.405}
-      - {x: -0.195, y: 0.39499998}
-      - {x: -0.315, y: 0.285}
-      - {x: -0.345, y: 0.21499999}
-      - {x: -0.355, y: 0.095}
-      - {x: -0.435, y: 0.005}
-      - {x: -0.48499998, y: -0.085}
-      - {x: -0.48499998, y: -0.315}
-      - {x: -0.465, y: -0.345}
-      - {x: -0.36499998, y: -0.415}
-      - {x: 0.33499998, y: -0.415}
-      - {x: 0.39499998, y: -0.33499998}
-      - {x: 0.45499998, y: -0.205}
-  m_UseDelaunayMesh: 0
 --- !u!95 &5182937461928374006
 Animator:
   serializedVersion: 7
@@ -222,23 +152,80 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8139923ec60344788e6c3f6fd471ab2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Velocity: 3.5
-  BlueSide: 1
-  Destination: {x: 0, y: 0}
-  SpawnPosition: {x: 0, y: 0}
-  AttackRange: 4.5
-  Health: 25
-  Damage: 8
-  Price: 15
+  velocity: 3
+  blueSide: 1
+  Destination: {x: 0, y: 0, z: 0}
+  SpawnPosition: {x: 0, y: 0, z: 0}
+  attackRange: 6
+  arriveDistance: 1.5
+  spawnDashDistance: 4
+  health: 30
+  damage: 9
+  price: 20
   priceDrop: 0
-  JumpDistance: 0.5
-  JumpHeight: 0.25
-  JumpDuration: 0.3
-  JumpDelay: 0.05
-  AllyCheckDistance: 0.7
-  AllyCheckRadius: 0.25
-  Name: BlueSlinger
-  ArcherAllyCheckDistance: 1.2
-  ArcherAllyCheckRadius: 0.5
-  SlingerAllyCheckDistance: 1.2
-  SlingerAllyCheckRadius: 0.5
+  jumpPower: 1.5
+  jumpDuration: 0.35
+  jumpDelay: 0.05
+  numJumps: 1
+  allyCheckDistance: 1.5
+  allyCheckRadius: 0.4
+  allyQueueGap: 0.35
+  enemyMinGap: 0.5
+  groundYOffset: 0
+  characterName: BaseSlime
+  damageFlashColor: {r: 1, g: 0.3, b: 0.3, a: 1}
+  damageFlashDuration: 0.07
+  damageFlashBlinks: 2
+  slingerAttackRange: 6
+  slingerAllyCheckDistance: 1.2
+  slingerAllyCheckRadius: 0.5
+  bulletPrefab: {fileID: -1661481527887929281, guid: e3dd370351291ba4390f46e5829206d0, type: 3}
+  bulletSpawnOffset: {x: 1.5, y: 0.3}
+  fallbackFireInterval: 1.5
+  minFireInterval: 0.2
+--- !u!61 &4280979519251509355
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5182937461928374001}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0.05085972}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1.15, y: 0.67}
+    newSize: {x: 1.05, y: 0.93}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 1.01, y: 0.6982805}
+  m_EdgeRadius: 0

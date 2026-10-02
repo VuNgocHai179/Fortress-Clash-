@@ -165,45 +165,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Red Player_5
+      name: Red Player_0
       rect:
         serializedVersion: 2
-        x: 23
-        y: 26
+        x: 54
+        y: 319
         width: 115
-        height: 67
+        height: 66
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: d50be8998bfbbd680800000000000000
-      internalID: -8729172653156421539
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Red Player_4
-      rect:
-        serializedVersion: 2
-        x: 201
-        y: 27
-        width: 118
-        height: 77
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: ff2c74afb2908efc0800000000000000
-      internalID: -3465509828774345985
+      spriteID: 37708f36a9c874641b8c780512e94ba2
+      internalID: -1657172637
       vertices: []
       indices: 
       edges: []
@@ -212,19 +190,19 @@ TextureImporter:
       name: Red Player_1
       rect:
         serializedVersion: 2
-        x: 210
-        y: 170
-        width: 108
-        height: 69
+        x: 234
+        y: 319
+        width: 114
+        height: 64
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: a2eb9cc65fd4f8a00800000000000000
+      spriteID: bd11e0977612ffe449f30b5f1fae3f1f
       internalID: 760912578536390186
       vertices: []
       indices: 
@@ -234,19 +212,19 @@ TextureImporter:
       name: Red Player_2
       rect:
         serializedVersion: 2
-        x: 383
-        y: 170
-        width: 115
-        height: 67
+        x: 417
+        y: 320
+        width: 106
+        height: 54
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: cf1d39f83d736fc00800000000000000
+      spriteID: b10692c74537b164c813ec1ae69786f6
       internalID: 933995354512413180
       vertices: []
       indices: 
@@ -256,20 +234,152 @@ TextureImporter:
       name: Red Player_3
       rect:
         serializedVersion: 2
-        x: 560
-        y: 170
-        width: 122
-        height: 58
+        x: 596
+        y: 319
+        width: 94
+        height: 60
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 18a12f0bbc6a1add0800000000000000
+      spriteID: ac4b540d18a3209479b831860978e1dd
       internalID: -2476514926299833727
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Red Player_4
+      rect:
+        serializedVersion: 2
+        x: 55
+        y: 177
+        width: 99
+        height: 61
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cb2e8dad5aa523f4eadf77e4778c911f
+      internalID: -3465509828774345985
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Red Player_5
+      rect:
+        serializedVersion: 2
+        x: 209
+        y: 177
+        width: 103
+        height: 63
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5dff9ef7dc956db4982e9702d486eca1
+      internalID: -8729172653156421539
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Red Player_6
+      rect:
+        serializedVersion: 2
+        x: 385
+        y: 176
+        width: 108
+        height: 60
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5786fcc67710f4149bba926b8e6f029b
+      internalID: -1580198941
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Red Player_7
+      rect:
+        serializedVersion: 2
+        x: 563
+        y: 175
+        width: 114
+        height: 53
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ca9cc3388abd15a46b2448644d479898
+      internalID: 1991321054
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Red Player_8
+      rect:
+        serializedVersion: 2
+        x: 26
+        y: 30
+        width: 109
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3d700932412d0e64aa6545487691b935
+      internalID: -602618130
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Red Player_9
+      rect:
+        serializedVersion: 2
+        x: 201
+        y: 31
+        width: 110
+        height: 74
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cdd5739e330336f4d9394b17c416524b
+      internalID: 1523694714
       vertices: []
       indices: 
       edges: []
@@ -289,6 +399,7 @@ TextureImporter:
       entries: []
     nameFileIdTable:
       0: -517846627370977289
+      Red Player_0: -1657172637
       Red Player_1: 760912578536390186
       Red Player_11: 7902014296132504019
       Red Player_13: 6076654195762833699
@@ -297,6 +408,10 @@ TextureImporter:
       Red Player_3: -2476514926299833727
       Red Player_4: -3465509828774345985
       Red Player_5: -8729172653156421539
+      Red Player_6: -1580198941
+      Red Player_7: 1991321054
+      Red Player_8: -602618130
+      Red Player_9: 1523694714
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -6,8 +6,6 @@ TagManager:
   tags:
   - enemy
   - ally
-  - enemygate
-  - allygate
   layers:
   - Default
   - TransparentFX

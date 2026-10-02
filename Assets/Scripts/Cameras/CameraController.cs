@@ -5,46 +5,63 @@ namespace FortressClash.Cameras
     public class CameraController : MonoBehaviour
     {
         [Header("Camera Settings")]
-        private float panSpeed = 15f;
+        [SerializeField] private float panSpeed = 15f;
 
         [Header("Map Boundaries")]
-        private float minX = -24.5f;
-        private float maxX = 22.9f;
+        [SerializeField] private float baseMinX = -28.6f;
+        [SerializeField] private float baseMaxX = 26.8f;
 
+        private float minX;
+        private float maxX;
+        private Camera cam;
         private Vector3 dragOrigin;
+
+        void Start()
+        {
+            cam = Camera.main;
+            UpdateBoundaries();
+        }
 
         void Update()
         {
+            UpdateBoundaries();
             HandleCameraPan();
+        }
+
+        private void UpdateBoundaries()
+        {
+            if (cam == null) return;
+
+            float currentAspect = (float)Screen.width / Screen.height;
+            float baseAspect = 16f / 9f;
+
+            float aspectDiff = baseAspect - currentAspect;
+
+            minX = baseMinX - (aspectDiff * cam.orthographicSize * 2f);
+            maxX = baseMaxX + (aspectDiff * cam.orthographicSize * 2f);
         }
 
         private void HandleCameraPan()
         {
-            // 1. Handle movement via Drag & Drop (Mouse/Touch)
             if (Input.GetMouseButtonDown(0))
             {
-                // Save the mouse position when the user first clicks
-                dragOrigin = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                dragOrigin = cam.ScreenToWorldPoint(Input.mousePosition);
             }
 
             if (Input.GetMouseButton(0))
             {
-                // Calculate the difference between the original and current mouse position
-                Vector3 difference = dragOrigin - Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                Vector3 difference = dragOrigin - cam.ScreenToWorldPoint(Input.mousePosition);
                 Vector3 targetPos = transform.position + new Vector3(difference.x, 0, 0);
 
-                // Clamp position to prevent the camera from going out of bounds
                 targetPos.x = Mathf.Clamp(targetPos.x, minX, maxX);
                 transform.position = targetPos;
             }
 
-            // 2. Handle movement via Keyboard (A/D or Arrow keys)
             float scroll = Input.GetAxis("Horizontal");
             if (Mathf.Abs(scroll) > 0)
             {
                 Vector3 targetPos = transform.position + new Vector3(scroll * panSpeed * Time.deltaTime, 0, 0);
 
-                // Clamp position to prevent the camera from going out of bounds
                 targetPos.x = Mathf.Clamp(targetPos.x, minX, maxX);
                 transform.position = targetPos;
             }

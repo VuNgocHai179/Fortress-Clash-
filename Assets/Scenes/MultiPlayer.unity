@@ -1724,7 +1724,7 @@ GameObject:
   - component: {fileID: 1216798963}
   m_Layer: 0
   m_Name: gate
-  m_TagString: enemygate
+  m_TagString: enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3240,7 +3240,7 @@ GameObject:
   - component: {fileID: 1742506508}
   m_Layer: 0
   m_Name: gate
-  m_TagString: allygate
+  m_TagString: ally
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

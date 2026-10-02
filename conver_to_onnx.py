@@ -1,6 +1,16 @@
 import torch
 
-from train import FortressAI
+from train import FortressAI, make_onnx_self_contained
+
+
+# ============================================================
+# GHI CHÚ
+# ============================================================
+# train.py giờ đã tự xuất ONNX nên script này chỉ còn dùng khi muốn xuất lại ONNX
+# từ file trọng số .pth có sẵn (ví dụ sau khi sửa tay trọng số).
+#
+# LƯU Ý: phải để external_data=False và gọi make_onnx_self_contained(), nếu không PyTorch sẽ ghi
+# trọng số ra file ngoài `<tên>.onnx.data` — Unity chỉ import đúng 1 file .onnx nên sẽ lỗi.
 
 
 # ============================================================
@@ -83,8 +93,13 @@ torch.onnx.export(
 
     },
 
-    opset_version=15
+    opset_version=15,
+
+    external_data=False
 )
+
+
+make_onnx_self_contained(ONNX_MODEL)
 
 
 print("========================================")

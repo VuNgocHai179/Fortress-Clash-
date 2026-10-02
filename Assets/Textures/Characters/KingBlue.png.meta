@@ -1,0 +1,430 @@
+fileFormatVersion: 2
+guid: c20cf6042b7c79146bc5c004506836ed
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -1984228819797356573
+    second: KingBlue_0
+  - first:
+      213: -3336332688291477025
+    second: KingBlue_1
+  - first:
+      213: -1566839015583631783
+    second: KingBlue_2
+  - first:
+      213: -4600991883460294127
+    second: KingBlue_3
+  - first:
+      213: 4339988796264757059
+    second: KingBlue_4
+  - first:
+      213: 6839689025677967562
+    second: KingBlue_5
+  - first:
+      213: 7498640938541689022
+    second: KingBlue_6
+  - first:
+      213: 3041377833144705940
+    second: KingBlue_7
+  - first:
+      213: -6138772584775080298
+    second: KingBlue_8
+  - first:
+      213: -5524784956219082455
+    second: KingBlue_9
+  - first:
+      213: 2264915469260782428
+    second: KingBlue_10
+  - first:
+      213: -3008733045205684738
+    second: KingBlue_11
+  - first:
+      213: -2530460777743018345
+    second: KingBlue_12
+  - first:
+      213: 1261091822544925020
+    second: KingBlue_13
+  - first:
+      213: -4603393959257263460
+    second: KingBlue_14
+  - first:
+      213: 1612387475536060597
+    second: KingBlue_15
+  - first:
+      213: 3047434799436350930
+    second: KingBlue_16
+  - first:
+      213: 2187381242744068472
+    second: KingBlue_17
+  - first:
+      213: -8775143257568040140
+    second: KingBlue_18
+  - first:
+      213: -2065274133060254552
+    second: KingBlue_19
+  - first:
+      213: -3213677678049692381
+    second: KingBlue_20
+  - first:
+      213: -6524118416446661870
+    second: KingBlue_21
+  - first:
+      213: 1960086260661196269
+    second: KingBlue_22
+  - first:
+      213: 334213016790055189
+    second: KingBlue_23
+  - first:
+      213: -3706683868647204741
+    second: KingBlue_24
+  - first:
+      213: -4657398650223338808
+    second: KingBlue_25
+  - first:
+      213: 9659704794942445
+    second: KingBlue_26
+  - first:
+      213: -3520580165936889720
+    second: KingBlue_27
+  - first:
+      213: -3344767164936916542
+    second: KingBlue_28
+  - first:
+      213: 5369246475917062584
+    second: KingBlue_29
+  - first:
+      213: 7419570645779596435
+    second: KingBlue_30
+  - first:
+      213: 1674142353885902813
+    second: KingBlue_31
+  - first:
+      213: 2611893109063924520
+    second: KingBlue_32
+  - first:
+      213: 3983069309161774129
+    second: KingBlue_33
+  - first:
+      213: 8242883116598036111
+    second: KingBlue_34
+  - first:
+      213: -6756854429886556801
+    second: KingBlue_35
+  - first:
+      213: 8187726414904167366
+    second: KingBlue_36
+  - first:
+      213: -1144746445121438369
+    second: KingBlue_37
+  - first:
+      213: -5852961071995668100
+    second: KingBlue_38
+  - first:
+      213: -102877853126277268
+    second: KingBlue_39
+  - first:
+      213: -7169541961291599067
+    second: KingBlue_40
+  - first:
+      213: -7481133380025145013
+    second: KingBlue_41
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: KingBlue_0
+      rect:
+        serializedVersion: 2
+        x: 26
+        y: 150
+        width: 331
+        height: 292
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3efc2eab66a9674e0800000000000000
+      internalID: -1984228819797356573
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: KingBlue_1
+      rect:
+        serializedVersion: 2
+        x: 391
+        y: 148
+        width: 375
+        height: 314
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fd9ccddb817f2b1d0800000000000000
+      internalID: -3336332688291477025
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: KingBlue_2
+      rect:
+        serializedVersion: 2
+        x: 780
+        y: 196
+        width: 319
+        height: 382
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9563aef7738714ae0800000000000000
+      internalID: -1566839015583631783
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: KingBlue_3
+      rect:
+        serializedVersion: 2
+        x: 1101
+        y: 158
+        width: 340
+        height: 296
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 11ac4e3524ef520c0800000000000000
+      internalID: -4600991883460294127
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: KingBlue_4
+      rect:
+        serializedVersion: 2
+        x: 1464
+        y: 148
+        width: 349
+        height: 309
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3473982e0dcba3c30800000000000000
+      internalID: 4339988796264757059
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: KingBlue_5
+      rect:
+        serializedVersion: 2
+        x: 1832
+        y: 145
+        width: 316
+        height: 312
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ac04cad3ee47bee50800000000000000
+      internalID: 6839689025677967562
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 2abcc0e43a9a90742925b246dd4e75a0
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      KingBlue_0: -1984228819797356573
+      KingBlue_1: -3336332688291477025
+      KingBlue_10: 2264915469260782428
+      KingBlue_11: -3008733045205684738
+      KingBlue_12: -2530460777743018345
+      KingBlue_13: 1261091822544925020
+      KingBlue_14: -4603393959257263460
+      KingBlue_15: 1612387475536060597
+      KingBlue_16: 3047434799436350930
+      KingBlue_17: 2187381242744068472
+      KingBlue_18: -8775143257568040140
+      KingBlue_19: -2065274133060254552
+      KingBlue_2: -1566839015583631783
+      KingBlue_20: -3213677678049692381
+      KingBlue_21: -6524118416446661870
+      KingBlue_22: 1960086260661196269
+      KingBlue_23: 334213016790055189
+      KingBlue_24: -3706683868647204741
+      KingBlue_25: -4657398650223338808
+      KingBlue_26: 9659704794942445
+      KingBlue_27: -3520580165936889720
+      KingBlue_28: -3344767164936916542
+      KingBlue_29: 5369246475917062584
+      KingBlue_3: -4600991883460294127
+      KingBlue_30: 7419570645779596435
+      KingBlue_31: 1674142353885902813
+      KingBlue_32: 2611893109063924520
+      KingBlue_33: 3983069309161774129
+      KingBlue_34: 8242883116598036111
+      KingBlue_35: -6756854429886556801
+      KingBlue_36: 8187726414904167366
+      KingBlue_37: -1144746445121438369
+      KingBlue_38: -5852961071995668100
+      KingBlue_39: -102877853126277268
+      KingBlue_4: 4339988796264757059
+      KingBlue_40: -7169541961291599067
+      KingBlue_41: -7481133380025145013
+      KingBlue_5: 6839689025677967562
+      KingBlue_6: 7498640938541689022
+      KingBlue_7: 3041377833144705940
+      KingBlue_8: -6138772584775080298
+      KingBlue_9: -5524784956219082455
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
