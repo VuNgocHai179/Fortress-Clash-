@@ -120,7 +120,7 @@ MonoBehaviour:
   numJumps: 1
   allyCheckDistance: 1.5
   allyCheckRadius: 0.4
-  allyQueueGap: 0.35
+  allyQueueGap: 1
   enemyMinGap: 0.5
   groundYOffset: 0
   characterName: RedSpearMan

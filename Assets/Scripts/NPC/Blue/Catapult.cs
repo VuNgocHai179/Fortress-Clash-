@@ -4,7 +4,10 @@ using DG.Tweening;
 public class Catapult : Slime
 {
     [Header("Catapult Vehicle Settings")]
-    public float catapultAttackRange = 14.2f;
+    [Tooltip("Tầm bắn (world unit). Xa nhất trong 3 lính tầm xa: đủ để Catapult đứng sau 2 lính cận chiến " +
+             "trong hàng đợi vẫn nã đá tới địch ở tuyến trước (cần > 18.2 để vượt qua 2 đồng minh, " +
+             "> 11.9 để vượt qua 1).")]
+    public float catapultAttackRange = 20f;
     public float catapultAllyCheckDistance = 1.8f;
     public float catapultAllyCheckRadius = 0.4f;
     public float moveSpeed = 3.5f;
@@ -15,13 +18,22 @@ public class Catapult : Slime
     public float fallbackFireInterval = 1.5f;
     public float minFireInterval = 0.2f;
 
+    /// <summary>
+    /// Catapult nã đá nên là lính TẦM XA: lính cận chiến cùng phe được phép đi xuyên qua để tới
+    /// chiến tuyến, và xe tự né ra sau hàng cận chiến (xem <see cref="Slime.AllyBlocksMe"/>).
+    /// </summary>
+    protected override bool IsRangedUnit
+    {
+        get { return true; }
+    }
+
     protected bool isAttacking = false;
     private Animator animator;
     private float timeSinceLastShot = Mathf.Infinity;
 
     private void Reset()
     {
-        catapultAttackRange = 14.2f;
+        catapultAttackRange = 20f;
         health = 70;
         damage = 30;
         price = 60;
@@ -38,7 +50,7 @@ public class Catapult : Slime
 
     protected override void Start()
     {
-        if (catapultAttackRange <= 0f) catapultAttackRange = 14.2f;
+        if (catapultAttackRange <= 0f) catapultAttackRange = 20f;
         if (health <= 0) health = 70;
         if (damage <= 0) damage = 30;
         if (price <= 0) price = 60;
@@ -61,17 +73,18 @@ public class Catapult : Slime
     {
         if (isAttacking)
         {
-            if (target == null || !IsValidTarget(target))
+            // Còn địch trong tầm (kể cả địch KHÁC vừa lọt vào tầm) là nã tiếp ngay, không ngắt đòn:
+            // xe bắn đá đứng sau hàng đợi vẫn đánh được mà không phải "đợi tới lượt".
+            if (!EnsureTargetStillValid())
             {
                 StopAttack();
+                return;
             }
-            else
+
+            timeSinceLastShot += Time.deltaTime;
+            if (timeSinceLastShot >= fallbackFireInterval)
             {
-                timeSinceLastShot += Time.deltaTime;
-                if (timeSinceLastShot >= fallbackFireInterval)
-                {
-                    FireBullet();
-                }
+                FireBullet();
             }
             return;
         }

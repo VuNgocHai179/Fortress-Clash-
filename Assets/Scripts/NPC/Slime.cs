@@ -16,7 +16,9 @@ public class Slime : MonoBehaviour
     public float arriveDistance = 1.5f;
 
     [Tooltip("Quãng lao tới tối đa ngay khi vừa spawn (world unit). Sẽ TỰ GIẢM nếu phía trước đã có " +
-             "đồng minh, để lính mới không đáp trúng lưng đồng đội.")]
+             "đồng minh, để lính mới đứng vào CUỐI HÀNG chứ không đáp trúng lưng đồng đội. Nếu hàng " +
+             "đồng minh đã lấn tới/qua điểm spawn thì lính mới LÙI RA SAU hàng (quãng lùi không bị " +
+             "giới hạn bởi số này).")]
     public float spawnDashDistance = 4f;
 
     public int health = 45;
@@ -30,14 +32,42 @@ public class Slime : MonoBehaviour
     public float jumpDelay = 0.05f;
     public int numJumps = 1;
 
+    [Header("Idle Animation - lúc đứng yên chờ đánh (DOTween)")]
+    [Tooltip("Bật hiệu ứng 'thở' (co giãn nhẹ theo DOTween) khi lính đứng yên chờ: đứng chờ đánh, " +
+             "chờ hàng tiến lên... Trước đây lính đứng im hoàn toàn nên nhìn như tượng.")]
+    public bool enableIdleAnimation = true;
+
+    [Tooltip("Biên độ nhịp thở: 0.08 = lúc hóp bụng thấp hơn 8% và bè ngang ra 8%.")]
+    public float idleSquashAmount = 0.08f;
+
+    [Tooltip("Thời gian MỘT nhịp thở (giây). Mỗi con lệch ngẫu nhiên ±15% để cả hàng không thở " +
+             "y hệt nhau như máy.")]
+    public float idleBreathDuration = 0.9f;
+
+    [Tooltip("Góc RƯỚN NGƯỜI về phía trước khi đứng chờ (độ). Lính chờ đánh nghiêng hẳn về phía " +
+             "địch thay vì đứng im như tượng. 0 = không nghiêng.")]
+    public float idleLeanAngle = 5f;
+
+    [Header("Ép sát khi còn ít chỗ (không nhảy)")]
+    [Tooltip("Khi chỗ trống phía trước ngắn hơn mức này (world unit) thì lính ÉP SÁT dần (trượt tới) " +
+             "thay vì nhảy một cú ngắn: nhờ vậy hàng đợi tiến vào ngay khi hàng trước vừa trống, và " +
+             "lính dí sát mục tiêu hơn (không đứng hụt lại một quãng).")]
+    public float pressForwardDistance = 1f;
+
+    [Tooltip("Tốc độ ép sát (world unit / giây).")]
+    public float pressForwardSpeed = 6f;
+
     [Header("Ally Blocking")]
     [Tooltip("Khoảng quét đồng minh phía trước (world unit) - chỉ là mức TỐI THIỂU, khoảng cách " +
              "thực sẽ tự lớn hơn nửa bề rộng body + allyQueueGap để lính không đè lên nhau.")]
     public float allyCheckDistance = 0.7f;
     public float allyCheckRadius = 0.25f;
 
-    [Tooltip("Khe hở giữa 2 lính cùng phe khi xếp hàng chờ đánh (world unit).")]
-    public float allyQueueGap = 0.35f;
+    [Tooltip("Khe hở mép-với-mép giữa 2 lính cùng phe khi xếp hàng chờ đánh (world unit). " +
+             "Đây là con số quyết định hàng đợi trông thoáng hay chen chúc: thân lính rất to " +
+             "(BaseSlime ~5.25 world unit) nên để quá nhỏ thì sprite dính sát nhau. " +
+             "Chỉnh ở đây nếu muốn hàng đợi rộng/hẹp hơn.")]
+    public float allyQueueGap = 1f;
 
     [Header("Enemy Blocking (2 phe không đè lên nhau)")]
     [Tooltip("Khoảng hở TỐI THIỂU giữa 2 COLLIDER của 2 đơn vị KHÁC PHE (world unit). " +
@@ -62,14 +92,17 @@ public class Slime : MonoBehaviour
     public int damageFlashBlinks = 2;
 
     protected Tween moveTween;
+    protected Tween idleTween;          // hiệu ứng "thở" lúc đứng yên chờ (xem UpdateIdleAnimation)
     protected bool isMoving = false;
     protected Vector3 originalScale;
+    protected Quaternion originalRotation;
 
     protected GameObject target;
 
     protected virtual void Awake()
     {
         originalScale = transform.localScale;
+        originalRotation = transform.localRotation;   // anim "rướn người" lúc chờ phải trả về đúng gốc
         groundY = transform.position.y;   // mặc định: đứng ngay tại chỗ được spawn
         CacheRestBodyWidth();
     }
@@ -180,12 +213,18 @@ public class Slime : MonoBehaviour
     }
 
     /// <summary>
-    /// Khoảng cách cần quét phía trước để không đè lên đồng minh: luôn ≥ nửa bề rộng body +
-    /// allyQueueGap. Giá trị set trong Inspector chỉ là mức tối thiểu.
+    /// Tầm quét đồng minh phía trước, tính từ TÂM mình (dùng cho CircleCastAll có bán kính
+    /// <see cref="allyCheckRadius"/>).
+    ///
+    /// Vì tia quét có bán kính nên tầm tới THẬT = giá trị này + bán kính, nên ở đây TRỪ bán kính ra
+    /// để tia vừa tới đúng chỗ "cách mép trước của mình allyQueueGap". Nhờ vậy lính hết bị coi là
+    /// chắn NGAY khi hàng trước vừa đủ chỗ, không phải chờ thêm một quãng nữa mới nhích vào
+    /// (trước đây còn phải chờ dư ra đúng bằng allyCheckRadius). Giá trị trong Inspector là mức
+    /// TỐI THIỂU.
     /// </summary>
     protected float GetAllyCheckDistance(float inspectorDistance)
     {
-        return Mathf.Max(inspectorDistance, RestHalfWidth + allyQueueGap);
+        return Mathf.Max(inspectorDistance, RestHalfWidth + allyQueueGap - allyCheckRadius);
     }
 
     /// <summary>
@@ -202,6 +241,7 @@ public class Slime : MonoBehaviour
     protected virtual void ContinueMovingIfIdle()
     {
         if (isSpawning || isMoving) return;
+        if (IsMoveTweenRunning) return;            // cú nhảy cũ còn đang bay => để nó đáp đã
         if (Destination == Vector3.zero) return;   // không có điểm đến (ví dụ King) => đứng yên
         StartMoving();
     }
@@ -251,6 +291,28 @@ public class Slime : MonoBehaviour
         PlaySpawnPopEffect();
     }
 
+    /// <summary>
+    /// Trượt tới sát một quãng ngắn, KHÔNG nhảy - dùng khi chỗ trống phía trước ít
+    /// (&lt; <see cref="pressForwardDistance"/>). Mỗi frame chỉ đi một quãng nhỏ
+    /// (<see cref="pressForwardSpeed"/> world unit/giây) nên nhìn như lính đang rướn tới chứ không
+    /// giật cục. Bản thân hàm này không đụng tới <see cref="isMoving"/>; người gọi
+    /// (<see cref="StartMoving"/>) phải tự hạ cờ đó xuống false sau khi gọi, để Update gọi lại được
+    /// mỗi frame cho tới khi hết chỗ.
+    ///
+    /// Đây là chỗ sửa cảm giác "cận chiến không lại gần được": trước đây hết chỗ nhảy là lính đứng
+    /// lại luôn, nên nó dừng hụt trước mục tiêu và trước hàng đợi một quãng nhìn thấy được.
+    /// </summary>
+    protected virtual void PressForward(float stepDistance, float direction)
+    {
+        if (stepDistance <= 0f) return;   // hết chỗ thật => đứng yên
+
+        float creep = Mathf.Min(stepDistance, Mathf.Max(0.01f, pressForwardSpeed) * Time.deltaTime);
+        if (creep <= 0f) return;
+
+        Vector3 position = transform.position;
+        transform.position = new Vector3(position.x + (creep * direction), position.y, position.z);
+    }
+
     protected virtual void Update()
     {
         if (CheckAllyBlocking())
@@ -265,7 +327,11 @@ public class Slime : MonoBehaviour
     protected virtual void StartMoving()
     {
         float distanceToDest = Mathf.Abs(transform.position.x - Destination.x);
-        if (distanceToDest <= arriveDistance) return;
+        if (distanceToDest <= arriveDistance)
+        {
+            isMoving = false;   // đã tới đích => không còn "đang đi" nữa
+            return;
+        }
 
         float direction = blueSide ? 1f : -1f;
 
@@ -274,9 +340,19 @@ public class Slime : MonoBehaviour
         float stepDistance = Mathf.Min(4.5f, distanceToDest);
         stepDistance = Mathf.Min(stepDistance, GetClearDistanceAhead());
 
-        if (stepDistance <= MinHopDistance)
+        // Còn ít chỗ thì ÉP SÁT dần (trượt tới) thay vì nhảy một cú ngắn: nhờ vậy hàng đợi tiến vào
+        // ngay khi hàng trước vừa trống, và lính dí sát mục tiêu tới đúng khoảng cách đánh chứ
+        // không đứng hụt lại một quãng (cú nhảy ngắn vừa xấu vừa để lại khe hở).
+        if (stepDistance <= pressForwardDistance)
         {
-            isMoving = false;   // bị chặn sát => đứng yên ngay trên mặt đất
+            PressForward(stepDistance, direction);
+
+            // PHẢI hạ cờ isMoving ở đây. Nhánh này KHÔNG tạo cú nhảy nào nên không có tween nào hạ
+            // cờ giúp, mà cờ thì đang là true do cú nhảy trước để lại (xem OnComplete của StartMoving).
+            // Để nguyên true thì ContinueMovingIfIdle() chặn luôn MỌI frame sau đó: lính đứng chết trân
+            // khi còn cách mục tiêu ~1-2.5 đơn vị - NGOÀI tầm đánh - nên 2 phe gặp nhau mà không đánh
+            // nhau. Hạ về false thì Update gọi lại mỗi frame, lính vẫn ép sát tới khi hết chỗ.
+            isMoving = false;
             return;
         }
 
@@ -338,6 +414,16 @@ public class Slime : MonoBehaviour
     }
 
     /// <summary>
+    /// Đơn vị này đánh xa không (bắn đạn / nã đá). Lớp con tầm xa override thành true.
+    /// Dùng ở <see cref="SeparateFromAllies"/>: lính tầm xa tự lùi ra khi có lính cận chiến cùng phe
+    /// đứng chồng hẳn lên nó.
+    /// </summary>
+    protected virtual bool IsRangedUnit
+    {
+        get { return false; }
+    }
+
+    /// <summary>
     /// Collider này có phải là đồng minh đang chắn đường không? King CÙNG PHE luôn bị bỏ qua:
     /// King đứng cố định ngay sát điểm spawn (collider của King thò ra trước mặt lính vừa spawn)
     /// nên nếu tính King là vật cản thì lính mới spawn sẽ bị kẹt tại chỗ, không đi được.
@@ -347,32 +433,54 @@ public class Slime : MonoBehaviour
     {
         if (collider == null || collider.gameObject == gameObject) return false;
 
-        Slime other = collider.GetComponentInParent<Slime>();
+        return AllyBlocksMe(collider.GetComponentInParent<Slime>());
+    }
+
+    /// <summary>
+    /// Đồng minh này có chắn đường mình không? Dùng thống nhất cho cả 3 việc: kiểm tra "bị đồng minh
+    /// chắn", giới hạn cú nhảy và chốt giãn cách cuối frame.
+    ///
+    /// Mọi lính cùng phe đều chắn đường nhau (không ai đi xuyên qua ai - hàng đợi đánh lần lượt),
+    /// chỉ bỏ qua King cùng phe vì King đứng cố định ngay sát điểm spawn, collider thò ra trước mặt
+    /// lính mới nên nếu tính là vật cản thì lính mới spawn bị kẹt tại chỗ.
+    /// </summary>
+    protected bool AllyBlocksMe(Slime other)
+    {
         if (other == null || other == this) return false;
-        if (other.blueSide != blueSide) return false;
-        if (other is KingSlime) return false;   // bỏ qua King cùng phe
+        if (other.blueSide != blueSide) return false;   // địch có luật riêng
+        if (other is KingSlime) return false;           // King cùng phe không chắn đường
 
         return true;
     }
 
     /// <summary>
-    /// Khoảng trống phía trước, đo từ MÉP THÂN mình tới mép gần nhất của ĐỒNG MINH gần nhất ở phía
-    /// trước, đã trừ khe hở xếp hàng. Kết quả nằm trong [0, <paramref name="maxDistance"/>].
+    /// Quãng dịch chuyển theo HƯỚNG TIẾN để lính mới đứng vào đúng CUỐI HÀNG đồng minh cùng phe:
+    /// dương = tiến lên, ÂM = phải LÙI RA SAU hàng (hàng đã lấn tới/qua điểm spawn).
+    ///
+    /// MỌI đồng minh cùng phe đều tính là vật cản, kể cả con đang CHỒNG LÊN mình hay đứng SAU mình:
+    /// mép thân mình phải cách mép thân nó ít nhất <see cref="allyQueueGap"/>. Vì lấy giá trị NHỎ NHẤT
+    /// trên tất cả đồng minh nên kết quả chính là chỗ đứng sau con CUỐI HÀNG.
+    ///
+    /// Trước đây hàm bỏ qua đồng minh có khe hở âm (đang chồng lên nhau) và cắt kết quả về 0, nên khi
+    /// hàng đã lấn tới điểm spawn thì lính mới KHÔNG "thấy" con đứng cuối hàng: nó cứ lao tới hết
+    /// quãng và đáp trúng lưng con đó (chèn vào giữa hàng). Giờ khe hở âm cho kết quả âm => lính mới
+    /// lùi ra sau hàng thay vì chèn vào giữa.
     ///
     /// KHÁC <see cref="GetClearDistanceAhead"/>: hàm này KHÔNG dùng physics mà duyệt thẳng danh sách
-    /// <see cref="Slime"/> và đo bằng bounds. Lý do: lính vừa được Instantiate thì collider chưa chắc
-    /// đã được đồng bộ vào thế giới vật lý (project đặt Physics2D.autoSyncTransforms = 0), nên
-    /// CircleCast có thể KHÔNG thấy đồng minh đang đứng ngay trước mặt -> lính mới đáp thẳng vào nó.
-    /// Dùng cho cú lao tới lúc mới spawn, nơi việc đáp trúng đồng minh là không thể chấp nhận.
+    /// <see cref="Slime"/> và đo bằng tâm + nửa bề rộng LÚC NGHỈ. Lý do: lính vừa được Instantiate thì
+    /// collider chưa chắc đã được đồng bộ vào thế giới vật lý (project đặt
+    /// Physics2D.autoSyncTransforms = 0), nên CircleCast có thể KHÔNG thấy đồng minh đang đứng ngay
+    /// trước mặt -> lính mới đáp thẳng vào nó. Dùng cho cú lao tới lúc mới spawn, nơi việc đáp trúng
+    /// đồng minh là không thể chấp nhận.
     /// </summary>
-    protected float GetFreeSpaceAheadOfAllies(float maxDistance)
+    protected float GetQueueSlotOffset(float maxDistance)
     {
         Collider2D own = BodyCollider;
         if (own == null) return maxDistance;
 
         float direction = blueSide ? 1f : -1f;
-        float ownEdge = blueSide ? own.bounds.max.x : own.bounds.min.x;
-        float clear = maxDistance;
+        float ownCenter = own.bounds.center.x;
+        float offset = maxDistance;
 
         foreach (Slime other in FindObjectsByType<Slime>(FindObjectsSortMode.None))
         {
@@ -383,15 +491,15 @@ public class Slime : MonoBehaviour
             Collider2D otherBody = other.BodyCollider;
             if (otherBody == null) continue;
 
-            float otherEdge = blueSide ? otherBody.bounds.min.x : otherBody.bounds.max.x;
-            float gap = (otherEdge - ownEdge) * direction;   // < 0 nghĩa là đồng minh này ở phía SAU mình
-            if (gap < 0f) continue;
+            // Khoảng hở mép-với-mép đang có (âm = đang chồng lên nhau), cùng quy ước với GetColliderGap.
+            float gap = (otherBody.bounds.center.x - ownCenter) * direction
+                        - (RestHalfWidth + other.RestHalfWidth);
 
             float allowed = gap - allyQueueGap;
-            if (allowed < clear) clear = allowed;
+            if (allowed < offset) offset = allowed;
         }
 
-        return Mathf.Max(0f, clear);
+        return offset;
     }
 
     /// <summary>
@@ -423,7 +531,6 @@ public class Slime : MonoBehaviour
 
             Slime other = hit.collider.GetComponentInParent<Slime>();
             if (other == null || other == this) continue;   // cổng / tường / đạn...: bỏ qua
-            if (other.blueSide == blueSide && other is KingSlime) continue;   // King cùng phe không chắn đường
 
             if (other.blueSide != blueSide)
             {
@@ -437,8 +544,12 @@ public class Slime : MonoBehaviour
                 continue;
             }
 
-            // ĐỒNG MINH: chỉ nhích thêm khi khe hở giữa 2 MÉP THÂN còn > allyQueueGap, nhờ vậy con
-            // to (Catapult rộng ~10 unit) cũng không đè lên con phía trước.
+            // ĐỒNG MINH: chỉ bỏ qua King cùng phe (xem AllyBlocksMe - mọi lính cùng phe đều chắn
+            // đường nhau nên hàng đợi đánh lần lượt, không ai đi xuyên qua ai).
+            if (!AllyBlocksMe(other)) continue;
+
+            // Chỉ nhích thêm khi khe hở giữa 2 MÉP THÂN còn > allyQueueGap, nhờ vậy con to
+            // (Catapult rộng ~10 unit) cũng không đè lên con phía trước.
             float allyGap = GetColliderGap(hit.collider);
             float allowed = allyGap - allyQueueGap;
             if (allowed < clear) clear = allowed;
@@ -457,14 +568,11 @@ public class Slime : MonoBehaviour
     // ==========================================
 
     /// <summary>
-    /// Dung sai khi so khoảng hở với tầm đánh. Phải lớn hơn mức "dừng hụt" tối đa của việc tiến tới:
-    /// khi áp sát địch mỗi bên chỉ nhích NỬA quãng còn lại (xem GetClearDistanceAhead) nên lính
-    /// dừng lại khi còn hụt ≤ MinHopDistance * 2 = 0.2. Cộng thêm 0.1 cho chắc.
+    /// Dung sai khi so khoảng hở với tầm đánh. Từ khi có "ép sát" (xem <see cref="PressForward"/>)
+    /// lính bù được hết quãng hụt cuối cùng nên hụt thực tế ≈ 0; để 0.3 cho thoải mái, khỏi lỡ nhịp
+    /// một frame là mất mục tiêu.
     /// </summary>
     protected const float AttackGapTolerance = 0.3f;
-
-    /// <summary>Bước nhích ngắn nhất còn đáng nhảy; ngắn hơn thì đứng lại (xem StartMoving).</summary>
-    protected const float MinHopDistance = 0.1f;
 
     /// <summary>
     /// Khoảng hở NGANG giữa thân mình và 1 collider khác:
@@ -569,21 +677,24 @@ public class Slime : MonoBehaviour
     {
         PushBackFromEnemy();
         SeparateFromAllies();
+        UpdateIdleAnimation();
     }
 
     /// <summary>
-    /// Chốt chặn cuối frame cho ĐỒNG MINH: chỉ can thiệp khi 2 thân cùng phe chồng lên nhau thật
-    /// (khoảng hở mép-với-mép nhỏ hơn <see cref="allyQueueGap"/>), và chỉ đẩy CHÍNH MÌNH LÙI RA SAU.
+    /// Chốt chặn cuối frame cho ĐỒNG MINH: can thiệp khi 2 thân cùng phe gần hơn khe hở xếp hàng
+    /// <see cref="allyQueueGap"/> (kể cả khi chưa chồng lên nhau) và chỉ đẩy CHÍNH MÌNH LÙI RA SAU.
     ///
     /// Vì sao cần: <see cref="GetClearDistanceAhead"/> chỉ NGĂN không cho lính lao vào đồng minh,
-    /// chứ không SỬA được khi chúng đã chồng lên nhau - ví dụ lúc mới spawn (cú lao tới lúc spawn
-    /// trước đây dài cố định 4 đơn vị nên lính đáp thẳng vào con đứng trước), hoặc khi tuyến trước
-    /// bị địch đẩy lùi. Trước đây chỉ có chốt chặn cho ĐỊCH nên lính cùng phe đè lên nhau vĩnh viễn.
+    /// chứ không SỬA được khi chúng đã quá sát nhau - ví dụ lúc mới spawn, hoặc khi tuyến trước bị
+    /// địch đẩy lùi. Trước đây chỉ có chốt chặn cho ĐỊCH nên lính cùng phe đè lên nhau vĩnh viễn.
     ///
     /// Chỉ đẩy khi đồng minh ở PHÍA TRƯỚC mình, nhờ vậy:
     ///   - Lính đang cận chiến với địch không bị đẩy lùi (nó không có đồng minh nào ở trước).
     ///   - Mỗi con chỉ lo khoảng cách với con đứng ngay trước nó, không tranh nhau từng frame.
     ///   - Hướng đẩy (ra sau) ngược với hướng đi (ra trước) nên không giằng co với cú nhảy.
+    ///
+    /// Riêng LÍNH TẦM XA có một ngoại lệ nhỏ: nếu có lính cận chiến cùng phe đứng CHỒNG hẳn lên nó
+    /// (thường do bị địch đẩy lùi) thì nó tự lùi ra, không đứng đè lên nhau.
     /// </summary>
     private void SeparateFromAllies()
     {
@@ -593,7 +704,9 @@ public class Slime : MonoBehaviour
         Collider2D own = BodyCollider;
         if (own == null) return;
 
-        Collider2D[] hits = OverlapAround(OverlapResolveGap);
+        // Vùng quét phải phủ tới đúng khe hở mong muốn (không chỉ vùng chồng lấn), nếu không thì
+        // lính chỉ được đẩy ra khỏi nhau chứ không được giữ đúng khe hở xếp hàng -> hàng đợi vẫn chen.
+        Collider2D[] hits = OverlapAround(OverlapResolveGap + allyQueueGap);
         if (hits.Length == 0) return;
 
         float direction = blueSide ? 1f : -1f;
@@ -610,10 +723,29 @@ public class Slime : MonoBehaviour
             if (other.blueSide != blueSide) continue;   // địch đã có PushBackFromEnemy lo
             if (other is KingSlime) continue;           // King cùng phe không tính là vật cản
 
+            float gap = GetColliderGap(col);
+
+            // LÍNH TẦM XA TỰ LÙI RA: có lính cận chiến cùng phe đứng CHỒNG hẳn lên mình (thường do
+            // địch đẩy lùi) và đã ĐỨNG YÊN HẲN (không còn cú nhảy nào đang bay) thì mình nhích ra,
+            // hai bên không đứng đè lên nhau. Cận chiến đang bay thì bỏ qua để khỏi giật.
+            //
+            // Chỉ nhích khi ĐÃ chồng lên nhau thật (khe hở âm), không nhích chỉ vì đứng gần: nhờ vậy
+            // lính tầm xa vẫn bám sát hàng cận chiến nhất có thể, không bị đẩy lùi dần ra ngoài tầm bắn.
+            if (IsRangedUnit && !other.IsRangedUnit)
+            {
+                if (!IsSettledAlly(other)) continue;
+
+                float meleePenetration = -gap;
+                if (meleePenetration > deepestPenetration) deepestPenetration = meleePenetration;
+                continue;
+            }
+
+            if (!AllyBlocksMe(other)) continue;   // chỉ bỏ qua King cùng phe
+
             // Chỉ lo con ở PHÍA TRƯỚC; con ở phía sau thì tự nó lo khoảng cách với mình.
             if ((col.bounds.center.x - myCenterX) * direction <= 0f) continue;
 
-            float penetration = allyQueueGap - GetColliderGap(col);
+            float penetration = allyQueueGap - gap;
             if (penetration > deepestPenetration) deepestPenetration = penetration;
         }
 
@@ -625,6 +757,16 @@ public class Slime : MonoBehaviour
         // Lùi ra xa đồng minh phía trước, giữ nguyên Y để không phá cú nhảy đang bay.
         Vector3 position = transform.position;
         transform.position = new Vector3(position.x - (direction * push), position.y, position.z);
+    }
+
+    /// <summary>
+    /// Đồng minh này đã đứng yên hẳn chưa: không đi, và không còn cú nhảy nào đang bay.
+    /// Dùng để bỏ qua lính cận chiến đang BAY (chồng lên mình chỉ trong chốc lát) và chỉ nhích ra
+    /// khi nó đã đứng ì ngay trên mình trong <see cref="SeparateFromAllies"/>.
+    /// </summary>
+    private static bool IsSettledAlly(Slime other)
+    {
+        return !other.isMoving && !other.IsMoveTweenRunning;
     }
 
     private void PushBackFromEnemy()
@@ -764,6 +906,7 @@ public class Slime : MonoBehaviour
     private void OnDestroy()
     {
         if (moveTween != null) moveTween.Kill();
+        if (idleTween != null) idleTween.Kill();
         if (damageFlashTween != null) damageFlashTween.Kill();
     }
 
@@ -783,12 +926,18 @@ public class Slime : MonoBehaviour
         float direction = blueSide ? 1f : -1f;
         Vector3 startPos = transform.position;
 
-        // Cú lao tới lúc mới spawn PHẢI bị chặn bởi chỗ trống phía trước, nếu không lính mới sẽ
-        // đáp thẳng vào con đứng trước (thân rộng 5-10 đơn vị mà cú lao dài 4 đơn vị nên chắc chắn
-        // chồng lên nhau). Cũng không được lao lố qua điểm đến.
-        float roomAhead = GetFreeSpaceAheadOfAllies(spawnDashDistance);
-        float distanceToDest = Mathf.Abs(transform.position.x - Destination.x);
-        float popDistance = Mathf.Clamp(roomAhead, 0f, Mathf.Max(0f, distanceToDest - arriveDistance));
+        // Cú lao tới lúc mới spawn phải dừng lại đúng CUỐI HÀNG đồng minh, nếu không lính mới sẽ đáp
+        // thẳng vào con đứng cuối (thân rộng 5-10 đơn vị mà cú lao dài 4 đơn vị nên chắc chắn chồng
+        // lên nhau). Khi hàng đã lấn tới/qua điểm spawn thì quãng này ÂM: lính mới lùi ra sau hàng.
+        float popDistance = GetQueueSlotOffset(spawnDashDistance);
+
+        // Khi TIẾN LÊN thì không được lao lố qua điểm đến; khi phải LÙI ra sau hàng thì không cần
+        // giới hạn theo điểm đến (điểm đến luôn ở phía trước).
+        if (popDistance > 0f)
+        {
+            float distanceToDest = Mathf.Abs(transform.position.x - Destination.x);
+            popDistance = Mathf.Min(popDistance, Mathf.Max(0f, distanceToDest - arriveDistance));
+        }
 
         float popHeight = 5.0f;
 
@@ -817,6 +966,107 @@ public class Slime : MonoBehaviour
             SnapToGround();       // luôn đáp đúng mặt nền, không treo trên không
             isMoving = false;     // để Update tự quyết định đi tiếp hay đứng lại đánh
         });
+    }
+
+    // ==========================================
+    // IDLE ANIMATION - HIỆU ỨNG "THỞ" LÚC ĐỨNG YÊN CHỜ
+    //
+    // Lính đứng chờ (chờ hàng tiến lên, chờ vào tầm đánh) trước đây đứng im hoàn toàn nên nhìn
+    // như tượng. Hiệu ứng này chỉ co giãn nhẹ transform (DOTween) nên KHÔNG đụng tới vị trí:
+    // không phá việc đứng trên mặt đất, không giành vị trí với cú nhảy hay chốt chặn giãn cách.
+    // ==========================================
+
+    /// <summary>
+    /// Lính có đang ở trạng thái "đứng yên chờ" để chạy hiệu ứng thở không.
+    /// Các lớp con không cần gọi gì thêm: chúng vốn đã set <see cref="isMoving"/> và
+    /// <see cref="target"/> đúng như lúc đi/đánh nên chỉ cần đọc 2 cờ đó.
+    /// </summary>
+    protected virtual bool ShouldPlayIdleAnimation
+    {
+        get
+        {
+            if (!enableIdleAnimation) return false;
+            if (isSpawning || isMoving) return false;      // đang hiệu ứng spawn / đang nhảy
+            if (IsMoveTweenRunning) return false;          // cú nhảy đang bay (isMoving đã tắt nhưng tween còn chạy)
+            if (target != null) return false;              // đang trong tầm đánh -> đánh, không tính là chờ
+            return CanPlayIdleAnimation;
+        }
+    }
+
+    /// <summary>Cú nhảy/xe chạy có đang bay không (tween còn hoạt động).</summary>
+    protected bool IsMoveTweenRunning
+    {
+        get { return moveTween != null && moveTween.IsActive(); }
+    }
+
+    /// <summary>
+    /// Lớp con nào KHÔNG muốn hiệu ứng thở thì trả về false (King đứng yên cả trận, có animator
+    /// riêng và bị DOPunchScale khi trúng đòn nên để yên).
+    /// </summary>
+    protected virtual bool CanPlayIdleAnimation
+    {
+        get { return true; }
+    }
+
+    /// <summary>
+    /// Bật/tắt hiệu ứng thở theo trạng thái thật của lính, gọi mỗi frame ở <see cref="LateUpdate"/>.
+    /// Đặt ở class cha để mọi loại lính (Sword, Archer, Catapult...) dùng chung một logic.
+    /// </summary>
+    protected void UpdateIdleAnimation()
+    {
+        if (ShouldPlayIdleAnimation) StartIdleAnimation();
+        else StopIdleAnimation();
+    }
+
+    /// <summary>Chạy nhịp thở lặp vô hạn (chỉ đụng vào scale, luôn lấy originalScale làm mốc).</summary>
+    protected virtual void StartIdleAnimation()
+    {
+        if (idleTween != null && idleTween.IsActive()) return;   // đang thở rồi
+
+        // Mỗi con một nhịp hơi khác nhau để cả hàng không thở y hệt nhau như máy.
+        float breath = Mathf.Max(0.1f, idleBreathDuration) * Random.Range(0.85f, 1.15f);
+        float half = breath * 0.5f;
+        float squash = Mathf.Clamp(idleSquashAmount, 0f, 0.4f);
+
+        Vector3 squashed = new Vector3(originalScale.x * (1f + squash),
+                                       originalScale.y * (1f - squash),
+                                       originalScale.z);
+        Vector3 stretched = new Vector3(originalScale.x * (1f - squash * 0.5f),
+                                        originalScale.y * (1f + squash * 0.5f),
+                                        originalScale.z);
+
+        Sequence breathSeq = DOTween.Sequence();
+
+        // Nhịp thở (co giãn) + RƯỚN NGƯỜI về phía trước: lính đứng chờ nghiêng hẳn về phía địch rồi
+        // trả về, nhìn như đang muốn lao vào đánh chứ không phải đứng im như tượng.
+        float lean = Mathf.Clamp(idleLeanAngle, 0f, 20f) * (blueSide ? -1f : 1f);   // nghiêng về phía trước
+        Vector3 leanForward = new Vector3(0f, 0f, lean);
+        Vector3 leanBack = new Vector3(0f, 0f, lean * 0.35f);
+
+        breathSeq.Append(transform.DOScale(squashed, half).SetEase(Ease.InOutSine));
+        breathSeq.Join(transform.DOLocalRotate(leanForward, half).SetEase(Ease.InOutSine));
+        breathSeq.Append(transform.DOScale(stretched, half).SetEase(Ease.InOutSine));
+        breathSeq.Join(transform.DOLocalRotate(leanBack, half).SetEase(Ease.InOutSine));
+        breathSeq.Append(transform.DOScale(originalScale, half * 0.7f).SetEase(Ease.InOutSine));
+        breathSeq.Join(transform.DOLocalRotateQuaternion(originalRotation, half * 0.7f).SetEase(Ease.InOutSine));
+        breathSeq.SetLoops(-1, LoopType.Restart);
+
+        idleTween = breathSeq;
+    }
+
+    /// <summary>
+    /// Tắt hiệu ứng thở/rướn người và trả lại đúng tỉ lệ + góc gốc. Chỉ trả scale khi không có hiệu
+    /// ứng khác đang điều khiển scale (cú nhảy / hiệu ứng spawn) để 2 bên không giành nhau.
+    /// </summary>
+    protected void StopIdleAnimation()
+    {
+        if (idleTween == null) return;
+
+        idleTween.Kill();
+        idleTween = null;
+
+        if (!isSpawning && !IsMoveTweenRunning) transform.localScale = originalScale;
+        transform.localRotation = originalRotation;
     }
 
     /// <summary>
@@ -861,6 +1111,25 @@ public class Slime : MonoBehaviour
                 target = col.gameObject;
             }
         }
+    }
+
+    /// <summary>
+    /// Đảm bảo lính LUÔN có mục tiêu trong tầm để đánh tiếp: nếu mục tiêu hiện tại đã hết hợp lệ
+    /// (chết, hoặc đi ra khỏi tầm) thì TÌM NGAY một mục tiêu khác còn trong tầm.
+    ///
+    /// Dùng cho lính TẦM XA: chỉ cần còn 1 địch trong tầm là bắn tiếp, không phải ngắt đòn rồi mới
+    /// bắn lại. Nếu gọi StopAttack (như trước đây) thì lính bị đưa về trạng thái đi bộ - nhảy lên
+    /// một cái rồi mới phát hiện mục tiêu mới, nhìn như đang "chờ tới lượt". Nhờ hàm này lính xa
+    /// đứng trong hàng đợi (sau lưng đồng minh) vẫn bắn đều vào bất kỳ địch nào lọt vào tầm.
+    ///
+    /// Trả về true nếu vẫn còn mục tiêu để đánh.
+    /// </summary>
+    protected bool EnsureTargetStillValid()
+    {
+        if (target != null && IsValidTarget(target)) return true;
+
+        FindTarget();
+        return target != null;
     }
 
     /// <summary>Mục tiêu này còn trong tầm đánh không (đo trên collider thật).</summary>

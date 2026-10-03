@@ -4,7 +4,10 @@ using DG.Tweening;
 public class Slinger : Slime
 {
     [Header("Slinger Combat & Range")]
-    public float slingerAttackRange = 6f;
+    [Tooltip("Tầm bắn (world unit). Đủ xa để Slinger đứng SAU 1 lính cận chiến trong hàng đợi vẫn bắn tới " +
+             "địch ở tuyến trước: cần > 9.3 mới vượt qua được 1 đồng minh (thân rộng ~5.25 + khe hở xếp " +
+             "hàng), > 15.5 mới vượt qua được 2. Slinger là lính xa có tầm THẤP NHẤT.")]
+    public float slingerAttackRange = 10f;
     public float slingerAllyCheckDistance = 1.2f;
     public float slingerAllyCheckRadius = 0.5f;
 
@@ -14,13 +17,22 @@ public class Slinger : Slime
     public float fallbackFireInterval = 1.5f;
     public float minFireInterval = 0.2f;
 
+    /// <summary>
+    /// Slinger bắn đạn nên là lính TẦM XA: lính cận chiến cùng phe được phép đi xuyên qua để tới
+    /// chiến tuyến, và Slinger tự né ra sau hàng cận chiến (xem <see cref="Slime.AllyBlocksMe"/>).
+    /// </summary>
+    protected override bool IsRangedUnit
+    {
+        get { return true; }
+    }
+
     protected bool isAttacking = false;
     private Animator animator;
     private float timeSinceLastShot = Mathf.Infinity;
 
     private void Reset()
     {
-        slingerAttackRange = 6f;
+        slingerAttackRange = 10f;
         health = 30;
         damage = 9;
         price = 20;
@@ -33,7 +45,7 @@ public class Slinger : Slime
 
     protected override void Start()
     {
-        if (slingerAttackRange <= 0f) slingerAttackRange = 6f;
+        if (slingerAttackRange <= 0f) slingerAttackRange = 10f;
         if (health <= 0) health = 30;
         if (damage <= 0) damage = 9;
         if (price <= 0) price = 20;
@@ -51,17 +63,18 @@ public class Slinger : Slime
     {
         if (isAttacking)
         {
-            if (target == null || !IsValidTarget(target))
+            // Còn địch trong tầm (kể cả địch KHÁC vừa lọt vào tầm) là bắn tiếp ngay, không ngắt đòn:
+            // Slinger đứng sau hàng đợi vẫn đánh được mà không phải "đợi tới lượt".
+            if (!EnsureTargetStillValid())
             {
                 StopAttack();
+                return;
             }
-            else
+
+            timeSinceLastShot += Time.deltaTime;
+            if (timeSinceLastShot >= fallbackFireInterval)
             {
-                timeSinceLastShot += Time.deltaTime;
-                if (timeSinceLastShot >= fallbackFireInterval)
-                {
-                    FireBullet();
-                }
+                FireBullet();
             }
             return;
         }

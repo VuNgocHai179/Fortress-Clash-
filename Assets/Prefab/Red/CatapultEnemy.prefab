@@ -107,7 +107,7 @@ MonoBehaviour:
   blueSide: 0
   Destination: {x: 0, y: 0, z: 0}
   SpawnPosition: {x: 0, y: 0, z: 0}
-  attackRange: 14.2
+  attackRange: 20
   arriveDistance: 1.5
   spawnDashDistance: 4
   health: 70
@@ -120,14 +120,14 @@ MonoBehaviour:
   numJumps: 1
   allyCheckDistance: 1.5
   allyCheckRadius: 0.4
-  allyQueueGap: 0.35
+  allyQueueGap: 1
   enemyMinGap: 0.5
   groundYOffset: 0
   characterName: RedCatapult
   damageFlashColor: {r: 1, g: 0.3, b: 0.3, a: 1}
   damageFlashDuration: 0.07
   damageFlashBlinks: 2
-  catapultAttackRange: 14.2
+  catapultAttackRange: 20
   catapultAllyCheckDistance: 1.8
   catapultAllyCheckRadius: 0.4
   moveSpeed: 3.5

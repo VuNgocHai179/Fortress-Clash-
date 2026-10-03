@@ -4,7 +4,10 @@ using DG.Tweening;
 public class Archer : Slime
 {
     [Header("Archer Combat & Range")]
-    public float archerAttackRange = 8.2f;
+    [Tooltip("Tầm bắn (world unit). Đủ xa để Archer đứng SAU 1 lính cận chiến trong hàng đợi vẫn bắn tới " +
+             "địch ở tuyến trước: thân lính rộng ~5.25 + khe hở xếp hàng nên cần > 9.4 mới bắn vượt qua " +
+             "được 1 đồng minh, và > 15.6 mới vượt qua được 2.")]
+    public float archerAttackRange = 13f;
     public float archerAllyCheckDistance = 1.5f;
     public float archerAllyCheckRadius = 0.35f;
 
@@ -18,6 +21,15 @@ public class Archer : Slime
     [Tooltip("Nhịp bắn dự phòng (giây).")]
     public float fallbackFireInterval = 1.5f;
     public float minFireInterval = 0.2f;
+
+    /// <summary>
+    /// Archer bắn đạn nên là lính TẦM XA: lính cận chiến cùng phe được phép đi xuyên qua để tới
+    /// chiến tuyến, và Archer tự né ra sau hàng cận chiến (xem <see cref="Slime.AllyBlocksMe"/>).
+    /// </summary>
+    protected override bool IsRangedUnit
+    {
+        get { return true; }
+    }
 
     protected bool isAttacking = false;
     private Animator animator;
@@ -37,17 +49,18 @@ public class Archer : Slime
     {
         if (isAttacking)
         {
-            if (target == null || !IsValidTarget(target))
+            // Còn địch trong tầm (kể cả địch KHÁC vừa lọt vào tầm) là bắn tiếp ngay, không ngắt đòn:
+            // Archer đứng sau hàng đợi vẫn đánh được mà không phải "đợi tới lượt".
+            if (!EnsureTargetStillValid())
             {
                 StopAttack();
+                return;
             }
-            else
+
+            timeSinceLastShot += Time.deltaTime;
+            if (timeSinceLastShot >= fallbackFireInterval)
             {
-                timeSinceLastShot += Time.deltaTime;
-                if (timeSinceLastShot >= fallbackFireInterval)
-                {
-                    FireBullet();
-                }
+                FireBullet();
             }
             return;
         }

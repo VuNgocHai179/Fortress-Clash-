@@ -107,7 +107,7 @@ MonoBehaviour:
   blueSide: 0
   Destination: {x: 0, y: 0, z: 0}
   SpawnPosition: {x: 0, y: 0, z: 0}
-  attackRange: 8.2
+  attackRange: 13
   arriveDistance: 1.5
   spawnDashDistance: 4
   health: 50
@@ -120,14 +120,14 @@ MonoBehaviour:
   numJumps: 1
   allyCheckDistance: 1.5
   allyCheckRadius: 0.4
-  allyQueueGap: 0.35
+  allyQueueGap: 1
   enemyMinGap: 0.5
   groundYOffset: 0
   characterName: RedArcher
   damageFlashColor: {r: 1, g: 0.3, b: 0.3, a: 1}
   damageFlashDuration: 0.07
   damageFlashBlinks: 2
-  archerAttackRange: 8.2
+  archerAttackRange: 13
   archerAllyCheckDistance: 1.5
   archerAllyCheckRadius: 0.35
   bulletPrefab: {fileID: -7405253416857744097, guid: bc750da2c06ded746ba5145424286433, type: 3}

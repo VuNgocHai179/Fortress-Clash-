@@ -1289,8 +1289,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   panSpeed: 15
-  baseMinX: -67.6
-  baseMaxX: 72.2
+  autoDetectMapBounds: 1
+  mapMinX: -80
+  mapMaxX: 103
+  defaultZoom: 12
+  minZoom: 7
+  maxZoom: 0
+  zoomOutMargin: 0.05
+  wheelZoomPerNotch: 1.2
+  pinchSensitivity: 1
+  zoomSmoothTime: 0.08
+  groundY: -0.7
+  groundBottomY: -7.65
+  groundViewportFraction: 0.18
+  maxZoomOutCameraY: 39.58604
+  mapEdgeInset: 1
+  backdrop: {fileID: 0}
+  backdropCoversView: 1
 --- !u!1 &542873954
 GameObject:
   m_ObjectHideFlags: 0
@@ -4023,7 +4038,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: -5.5369, z: 0}
-  m_LocalScale: {x: 200, y: 4.3739967, z: 1}
+  m_LocalScale: {x: 220, y: 4.3739967, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2065297880}

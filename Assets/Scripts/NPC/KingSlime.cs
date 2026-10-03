@@ -97,6 +97,15 @@ public class KingSlime : Slime
     }
 
     /// <summary>
+    /// King (thành) đứng yên suốt trận, đã có animator riêng và còn bị DOPunchScale khi trúng đòn
+    /// nên TẮT hiệu ứng "thở" dùng chung của lính (tránh 2 tween cùng giành transform).
+    /// </summary>
+    protected override bool CanPlayIdleAnimation
+    {
+        get { return false; }
+    }
+
+    /// <summary>
     /// Tiền King nhả ra mỗi lượt. Phe xanh (người chơi) được cộng thưởng theo level thành,
     /// phe đỏ (AI) luôn giữ nguyên <see cref="resourcePerTick"/>.
     /// </summary>
