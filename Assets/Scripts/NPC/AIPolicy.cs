@@ -100,17 +100,42 @@ public static class AIPolicy
         {   0.85f,      0.45f },   // Catapult - tầm 9, nhưng chậm và dễ vỡ
     };
 
-    /// <summary>Trọng số của phần khắc chế (tiêu chí quan trọng nhất).</summary>
+    /// <summary>Trọng số GỐC của phần khắc chế (tiêu chí quan trọng nhất). Bị nhân bởi độ khắc chế của level.</summary>
     private const float CounterWeight = 3.0f;
 
     /// <summary>Trọng số của phần giữ đội hình cân bằng melee / tầm xa.</summary>
     private const float RoleWeight = 1.2f;
 
     /// <summary>Trọng số của phần ưu tiên lính rẻ đầu trận.</summary>
-    private const float CheapBiasWeight = 2.0f;
+    private const float CheapBiasWeight = 1.6f;
 
-    /// <summary>Mức phạt khi đã có nhiều lính cùng loại (lợi ích biên giảm dần).</summary>
-    private const float RedundancyPenalty = 0.35f;
+    /// <summary>
+    /// Mức phạt khi đã có nhiều lính cùng loại (lợi ích biên giảm dần) — theo TỪNG loại.
+    /// BaseSlime bị phạt nặng nhất vì đây là lính rẻ nhất (10 tiền) nên nếu phạt nhẹ là AI spam
+    /// slime cả trận, nhìn rất máy móc.
+    /// </summary>
+    private static readonly float[] RedundancyPenalty =
+    {
+        0.55f,   // Sword
+        0.55f,   // Archer
+        0.80f,   // Slinger
+        0.45f,   // SpearMan
+        1.20f,   // BaseSlime
+        0.45f    // Catapult
+    };
+
+    /// <summary>
+    /// Trọng số phạt theo TỈ LỆ một loại trong đội hình. Đây là "chốt chống spam": đội mà dồn gần hết
+    /// vào một loại thì loại đó bị trừ điểm rất mạnh, ép AI mua loại khác cho giống người chơi.
+    /// </summary>
+    private const float DiversityWeight = 2.5f;
+
+    /// <summary>
+    /// Số lính TỐI ĐA mỗi loại trong đội. Đây là "chốt cứng" chống spam: dù một loại là thứ duy nhất
+    /// mua được, AI cũng không dồn quá mức này vào nó mà CHỜ tích tiền mua loại khác — đúng cách một
+    /// người chơi thật giữ đội hình đa dạng. Nhờ vậy AI thôi spam slime.
+    /// </summary>
+    private const int MaxUnitsPerType = 3;
 
     /// <summary>Lính này có phải tuyến trước (melee) không.</summary>
     public static bool IsMelee(int unit)
@@ -124,9 +149,22 @@ public static class AIPolicy
     private const int MaxSanePrice = 100000;
 
     /// <summary>
-    /// Quyết định mua gì. Trả về <see cref="Waiting"/> hoặc chỉ số trong <see cref="AIUnitType"/>.
+    /// Quyết định mua gì với độ khắc chế mặc định (1 = khắc chế tối đa). Giữ để tương thích với
+    /// <c>AIDatasetGenerator</c>; trong game nên gọi bản có độ khắc chế theo level.
     /// </summary>
     public static int Decide(AIState state)
+    {
+        return Decide(state, 1f);
+    }
+
+    /// <summary>
+    /// Quyết định mua gì. Trả về <see cref="Waiting"/> hoặc chỉ số trong <see cref="AIUnitType"/>.
+    ///
+    /// <paramref name="counterAwareness"/> nằm trong [0,1]: mức AI đọc bài đối thủ.
+    ///   0 = bỏ qua đội hình địch, chỉ giữ đội hình cân bằng (vẫn chọn lính hợp lý, chỉ là không khôn).
+    ///   1 = khắc chế tối đa. Đây là nút chỉnh độ khó mà KHÔNG làm AI chọn lính vô lý.
+    /// </summary>
+    public static int Decide(AIState state, float counterAwareness)
     {
         int[] price = state.prices;
         if (price == null || price.Length != UnitCount) return Waiting;
@@ -174,26 +212,35 @@ public static class AIPolicy
         // (5) Tiền dư quá nhiều thì phải tiêu vào lính đắt cho đỡ phí.
         bool moneyIsPilingUp = state.money >= 2 * mostExpensive;
 
+        // Độ khắc chế của level nhân vào phần "đọc bài đối thủ" (nút chỉnh độ khó).
+        float counterWeight = CounterWeight * Mathf.Clamp01(counterAwareness);
+
         float bestScore = float.NegativeInfinity;
         int best = Waiting;
 
         for (int u = 0; u < UnitCount; u++)
         {
-            if (!IsSanePrice(price[u])) continue;    // loại lính cấu hình lỗi
-            if (state.money < price[u]) continue;    // không đủ tiền loại này
+            if (!IsSanePrice(price[u])) continue;          // loại lính cấu hình lỗi
+            if (state.money < price[u]) continue;          // không đủ tiền loại này
+            if (state.ownCounts[u] >= MaxUnitsPerType) continue;   // đã đủ nhiều loại này -> thôi
 
             float priceRatio = (float)price[u] / mostExpensive;
 
             float score = BaseValue[u];
 
-            // Khắc chế đội hình địch (tiêu chí quan trọng nhất).
-            score += CounterWeight * ((Counter[u, 0] * enemyMeleeWeight) + (Counter[u, 1] * enemyRangedWeight));
+            // Khắc chế đội hình địch (tiêu chí quan trọng nhất, co lại theo độ khó của level).
+            score += counterWeight * ((Counter[u, 0] * enemyMeleeWeight) + (Counter[u, 1] * enemyRangedWeight));
 
             // Cân bằng melee / tầm xa.
             score += RoleWeight * (IsMelee(u) ? meleeDeficit : -meleeDeficit);
 
-            // Càng mua nhiều một loại thì lợi ích biên càng giảm.
-            score -= RedundancyPenalty * state.ownCounts[u];
+            // Chống spam: phạt theo số lượng đã có (lợi ích biên giảm dần, nặng với lính rẻ dễ spam).
+            score -= RedundancyPenalty[u] * state.ownCounts[u];
+
+            // Chống spam: phạt theo TỈ LỆ loại này trong đội hình. Đội càng dồn vào 1 loại thì loại đó
+            // càng mất điểm, ép AI mua loại khác -> đội hình đa dạng, giống người chơi.
+            float projectedShare = (state.ownCounts[u] + 1f) / (myTotal + 1f);
+            score -= DiversityWeight * projectedShare;
 
             // Đầu trận đẩy lính rẻ lên.
             score += CheapBiasWeight * cheapBias * (1f - priceRatio);

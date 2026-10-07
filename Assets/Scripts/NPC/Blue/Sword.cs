@@ -75,6 +75,8 @@ public class Sword : Slime
         if (isAttacking) return;
         isAttacking = true;
 
+        AudioManager.PlayAttack();   // tiếng tấn công (mọi loại lính, cả 2 phe)
+
         // Không Kill tween ở đây: để cú nhảy đang dở bay hết quỹ đạo rồi đáp xuống đất,
         // nếu Kill giữa chừng lính sẽ bị treo lơ lửng trên không trung.
         isMoving = false;
@@ -106,18 +108,11 @@ public class Sword : Slime
         }
     }
 
-    // KIỂM TRA ĐỒNG ĐỘI (Đã dùng CircleCastAll để không đẩy nhau)
+    // KIỂM TRA ĐỒNG ĐỘI (quét bằng khung cao bằng thân, xem Slime.ForwardScanAll, để không đẩy nhau)
     protected virtual bool SwordHasAllyInFront()
     {
-        Vector2 currentPosition = transform.position;
-        Vector2 direction = ((Vector3)Destination - (Vector3)currentPosition).normalized;
+        RaycastHit2D[] hits = ForwardScanAll(transform.position, GetAllyCheckDistance(swordAllyCheckDistance), swordAllyCheckRadius);
 
-        if (direction == Vector2.zero)
-        {
-            direction = blueSide ? Vector2.right : Vector2.left;
-        }
-
-        RaycastHit2D[] hits = Physics2D.CircleCastAll(currentPosition, swordAllyCheckRadius, direction, GetAllyCheckDistance(swordAllyCheckDistance));
         foreach (RaycastHit2D hit in hits)
         {
             if (IsBlockingAlly(hit.collider)) return true;
@@ -128,18 +123,7 @@ public class Sword : Slime
 
     protected void OnDrawGizmosSelected()
     {
-        Vector2 direction = ((Vector3)Destination - transform.position).normalized;
-
-        if (direction == Vector2.zero)
-        {
-            direction = blueSide ? Vector2.right : Vector2.left;
-        }
-
-        Vector2 checkPosition = (Vector2)transform.position + direction * GetAllyCheckDistance(swordAllyCheckDistance);
-
-        Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(checkPosition, swordAllyCheckRadius);
-
+        DrawForwardScanGizmo(transform.position, GetAllyCheckDistance(swordAllyCheckDistance), swordAllyCheckRadius, Color.blue);
         DrawAttackGizmo(new Color(1f, 0f, 0f, 0.3f));
     }
 }

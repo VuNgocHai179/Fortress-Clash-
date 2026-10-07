@@ -84,6 +84,8 @@ public class SpearMan : Slime
         if (isAttacking) return;
         isAttacking = true;
 
+        AudioManager.PlayAttack();   // tiếng tấn công (mọi loại lính, cả 2 phe)
+
         // Không Kill tween ở đây: để cú nhảy đang dở bay hết quỹ đạo rồi đáp xuống đất,
         // nếu Kill giữa chừng lính sẽ bị treo lơ lửng trên không trung.
         isMoving = false;
@@ -112,16 +114,10 @@ public class SpearMan : Slime
         }
     }
 
+    /// <summary>Quét bằng KHUNG cao bằng thân (xem <see cref="Slime.ForwardScanAll"/>).</summary>
     protected virtual bool SpearManHasAllyInFront()
     {
-        Vector2 currentPosition = transform.position;
-        Vector2 direction = ((Vector3)Destination - (Vector3)currentPosition).normalized;
-        if (direction == Vector2.zero)
-        {
-            direction = blueSide ? Vector2.right : Vector2.left;
-        }
-
-        RaycastHit2D[] hits = Physics2D.CircleCastAll(currentPosition, spearAllyCheckRadius, direction, GetAllyCheckDistance(spearAllyCheckDistance));
+        RaycastHit2D[] hits = ForwardScanAll(transform.position, GetAllyCheckDistance(spearAllyCheckDistance), spearAllyCheckRadius);
 
         foreach (RaycastHit2D hit in hits)
         {
@@ -132,14 +128,7 @@ public class SpearMan : Slime
 
     protected void OnDrawGizmosSelected()
     {
-        Vector2 direction = ((Vector3)Destination - transform.position).normalized;
-        if (direction == Vector2.zero)
-        {
-            direction = blueSide ? Vector2.right : Vector2.left;
-        }
-        Vector2 checkPosition = (Vector2)transform.position + direction * GetAllyCheckDistance(spearAllyCheckDistance);
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(checkPosition, spearAllyCheckRadius);
+        DrawForwardScanGizmo(transform.position, GetAllyCheckDistance(spearAllyCheckDistance), spearAllyCheckRadius, Color.green);
         DrawAttackGizmo(new Color(1f, 0f, 0f, 0.3f));
     }
 }

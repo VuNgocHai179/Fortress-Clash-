@@ -33,6 +33,8 @@ public enum AIMode
 ///     học được thật, và lúc nào cũng có thể quay về luật nếu model tệ.
 ///   - Scaler thật được nhúng vào <see cref="ScalerMean"/>/<see cref="ScalerScale"/>.
 ///   - Nhịp ra lính riêng (<see cref="spawnInterval"/>) để AI không bị người chơi áp đảo về số lượng.
+///   - ĐỘ KHÓ THEO LEVEL: nhịp ra lính, trần lính, mức khắc chế... đọc từ hồ sơ của level đang chơi
+///     (GameManager.ActiveLevelSettings). Vì model ONNX là cố định nên mặc định dùng RuleBased.
 /// ==========================================================================
 /// </summary>
 public class AI : MonoBehaviour
@@ -44,13 +46,16 @@ public class AI : MonoBehaviour
     public const int OutputSize = 1 + AIPolicy.UnitCount;
 
     [Header("Chế độ AI")]
-    [Tooltip("RuleBased = bộ não luật (đúng 100% theo AIPolicy, không cần model).\n" +
-             "NeuralNetwork = model ONNX đã train lại từ bộ não luật (độ khớp ~92%). " +
-             "Model lỗi thì tự quay về luật.")]
-    public AIMode mode = AIMode.NeuralNetwork;
+    [Tooltip("RuleBased = bộ não luật (AIPolicy) - ĐÂY LÀ CHẾ ĐỘ MẶC ĐỊNH vì nó biết độ khó của level " +
+             "(nhịp ra lính, trần lính, độ khắc chế...).\n" +
+             "NeuralNetwork = model ONNX đã train từ bộ não luật; model cố định, KHÔNG đổi hành vi theo " +
+             "level được (muốn vậy phải train lại). Model lỗi thì tự quay về luật.")]
+    public AIMode mode = AIMode.RuleBased;
 
     [Header("Nhịp ra lính")]
-    [Tooltip("Số giây giữa 2 lần AI ra lính. Người chơi cũng có cooldown riêng (GameManager.chooseDelay).")]
+    [Tooltip("Số giây giữa 2 lần AI ra lính - CHỈ dùng khi level đang chơi không có hồ sơ riêng. " +
+             "Level có trong bảng độ khó thì lấy nhịp của level đó (LevelSettings.aiSpawnInterval). " +
+             "Người chơi có cooldown riêng (GameManager.chooseDelay).")]
     [Min(0.5f)]
     public float spawnInterval = 2f;
 
@@ -90,16 +95,47 @@ public class AI : MonoBehaviour
     /// <summary>AI đang thực sự dùng bộ não nào (model có thể hỏng giữa chừng và tự lùi về luật).</summary>
     public bool IsUsingModel => mode == AIMode.NeuralNetwork && modelReady;
 
+    /// <summary>Hồ sơ độ khó của level đang chơi; null nếu level không có trong bảng độ khó.</summary>
+    private static LevelSettings LevelProfile =>
+        (GameManager.Instance != null) ? GameManager.Instance.ActiveLevelSettings : null;
+
+    /// <summary>
+    /// Nhịp ra lính thực tế: theo hồ sơ của level nếu có, ngược lại dùng <see cref="spawnInterval"/>
+    /// trên Inspector. Đọc lại mỗi nhịp nên không sợ GameManager.Start() chạy sau AI.Start().
+    /// Luôn kẹp >= 0.5s để một giá trị 0 lỡ cấu hình không làm AI ra lính mỗi frame.
+    /// </summary>
+    public float CurrentSpawnInterval
+    {
+        get
+        {
+            LevelSettings profile = LevelProfile;
+            float interval = (profile != null) ? profile.aiSpawnInterval : spawnInterval;
+            return Mathf.Max(0.5f, interval);
+        }
+    }
+
+    /// <summary>Mức khắc chế đội hình người chơi theo level (0..1). Level không có hồ sơ thì tối đa (1).</summary>
+    public float CurrentCounterAwareness
+    {
+        get
+        {
+            LevelSettings profile = LevelProfile;
+            return (profile != null) ? profile.aiCounterAwareness : 1f;
+        }
+    }
+
     private void Start()
     {
-        if (mode != AIMode.NeuralNetwork)
+        // MultiPlayer: phe đỏ do NGƯỜI CHƠI thứ hai (client) điều khiển, không còn là AI.
+        // Tắt hẳn bộ não để nó không tranh mua lính với người chơi.
+        if (NetworkRole.IsMultiplayer)
         {
-            Debug.Log($"AI: chạy bằng bộ não luật (RuleBased), ra lính mỗi {spawnInterval:0.##}s.");
+            Debug.Log("[AI] Đang ở chế độ multiplayer (phe đỏ do người chơi điều khiển) => tắt AI.");
+            enabled = false;
+            return;
         }
-        else
-        {
-            LoadModel();
-        }
+
+        if (mode == AIMode.NeuralNetwork) LoadModel();
 
         StartCoroutine(RunAI());
     }
@@ -129,13 +165,17 @@ public class AI : MonoBehaviour
 
     private IEnumerator RunAI()
     {
-        // Chờ 1 nhịp trước khi ra quyết định đầu tiên để GameManager kịp Start (nạp giá lính).
-        yield return new WaitForSeconds(spawnInterval);
+        // Nhường 1 frame để MỌI Start() chạy xong (gồm GameManager.Start áp độ khó của level) rồi mới
+        // đọc nhịp ra lính - tránh đọc nhầm nhịp mặc định khi GameManager.Start() chạy sau AI.Start().
+        yield return null;
+
+        Debug.Log($"AI: bộ não {(IsUsingModel ? "MODEL ONNX" : "LUẬT (RuleBased)")}, " +
+                  $"ra lính mỗi {CurrentSpawnInterval:0.##}s, khắc chế x{CurrentCounterAwareness:0.##}.");
 
         while (true)
         {
+            yield return new WaitForSeconds(CurrentSpawnInterval);
             Tick();
-            yield return new WaitForSeconds(spawnInterval);
         }
     }
 
@@ -183,7 +223,7 @@ public class AI : MonoBehaviour
             Debug.LogWarning("AI: model ONNX không dùng được nữa => chuyển sang bộ não luật.");
         }
 
-        return AIPolicy.Decide(state);
+        return AIPolicy.Decide(state, CurrentCounterAwareness);
     }
 
     /// <summary>

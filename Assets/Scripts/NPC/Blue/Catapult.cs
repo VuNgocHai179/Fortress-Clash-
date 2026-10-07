@@ -135,6 +135,8 @@ public class Catapult : Slime
 
         isMoving = true;
 
+        AudioManager.PlayMove();   // tiếng di chuyển của xe nã đá (chạy bằng StartMovingAsVehicle)
+
         float targetX = transform.position.x + (step * direction);
         if (blueSide && targetX > Destination.x) targetX = Destination.x;
         if (!blueSide && targetX < Destination.x) targetX = Destination.x;
@@ -169,6 +171,9 @@ public class Catapult : Slime
 
     private void PlayVehicleSpawnEffect()
     {
+        // Hiệu ứng VFX lúc xe vừa được sinh ra (CFXR Flash) - giống mọi lính khác, xem VfxManager.
+        VfxManager.PlaySpawnFlash(transform.position);
+
         isSpawning = true;
         isMoving = true;
         transform.localScale = Vector3.zero;
@@ -192,6 +197,8 @@ public class Catapult : Slime
     {
         if (isAttacking) return;
         isAttacking = true;
+
+        AudioManager.PlayAttack();   // tiếng tấn công (mọi loại lính, cả 2 phe)
 
         // Không Kill tween ở đây: để xe đang chạy dở dừng lại đúng vị trí,
         // nếu Kill giữa chừng xe có thể bị lệch khỏi mặt đất.
@@ -226,18 +233,20 @@ public class Catapult : Slime
         Vector2 spawnPosition = (Vector2)transform.position + bulletSpawnOffset;
         Bullet bullet = Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
         bullet.Launch(spawnPosition, target.transform.position, damage, blueSide, gameObject);
+
+        // MultiPlayer: đạn cũng phải do HOST sinh ra rồi đồng bộ sang client (chơi đơn: no-op).
+        NetworkRole.SpawnIfServer(bullet.gameObject);
     }
 
+    /// <summary>
+    /// Có đồng minh đang chắn ngay trước xe không. Quét bằng KHUNG cao bằng thân (xem
+    /// <see cref="Slime.ForwardScanAll"/>) - xe cao 9.1 nên nếu quét tròn ở tâm thì tia bay qua đầu
+    /// các lính thấp (slime/Slinger/Archer chỉ cao 2.8-3.5) và xe tưởng trước mặt trống.
+    /// </summary>
     protected virtual bool CatapultHasAllyInFront()
     {
-        Vector2 currentPosition = transform.position;
-        Vector2 direction = ((Vector3)Destination - (Vector3)currentPosition).normalized;
-        if (direction == Vector2.zero)
-        {
-            direction = blueSide ? Vector2.right : Vector2.left;
-        }
+        RaycastHit2D[] hits = ForwardScanAll(transform.position, GetAllyCheckDistance(catapultAllyCheckDistance), catapultAllyCheckRadius);
 
-        RaycastHit2D[] hits = Physics2D.CircleCastAll(currentPosition, catapultAllyCheckRadius, direction, GetAllyCheckDistance(catapultAllyCheckDistance));
         foreach (RaycastHit2D hit in hits)
         {
             if (IsBlockingAlly(hit.collider)) return true;
@@ -247,14 +256,7 @@ public class Catapult : Slime
 
     protected void OnDrawGizmosSelected()
     {
-        Vector2 direction = ((Vector3)Destination - transform.position).normalized;
-        if (direction == Vector2.zero)
-        {
-            direction = blueSide ? Vector2.right : Vector2.left;
-        }
-        Vector2 checkPosition = (Vector2)transform.position + direction * GetAllyCheckDistance(catapultAllyCheckDistance);
-        Gizmos.color = new Color(1f, 0.5f, 0f);
-        Gizmos.DrawWireSphere(checkPosition, catapultAllyCheckRadius);
+        DrawForwardScanGizmo(transform.position, GetAllyCheckDistance(catapultAllyCheckDistance), catapultAllyCheckRadius, new Color(1f, 0.5f, 0f));
         DrawAttackGizmo(new Color(1f, 0f, 0f, 0.3f));
     }
 }

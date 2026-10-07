@@ -1,0 +1,14 @@
+# Unity ghi các file YAML (.unity/.prefab/.asset/.meta/...) với khoá rỗng ở dạng "m_Name: " —
+# tức CÓ một dấu cách ở cuối dòng. Đó là định dạng hợp lệ của Unity và nó LUÔN xuất hiện lại sau
+# mỗi lần lưu scene/prefab, nên nếu để git bắt lỗi whitespace thì `git diff --check` sẽ báo lỗi giả
+# liên tục trên những dòng không ai viết tay.
+#
+# Tắt riêng kiểm tra whitespace cho các file do Unity sinh. Các file code (.cs, .json, .md, ...)
+# vẫn được kiểm tra bình thường.
+*.unity      -whitespace
+*.prefab     -whitespace
+*.asset      -whitespace
+*.meta       -whitespace
+*.mat        -whitespace
+*.anim       -whitespace
+*.controller -whitespace

@@ -51,6 +51,15 @@ public class Bullet : MonoBehaviour
     private bool launched;
 
     /// <summary>
+    /// Ở multiplayer, đạn cũng là vật thể do HOST sinh ra rồi đồng bộ sang client (NetworkTransform
+    /// lo phần bay lượn). Client không mô phỏng lại nên tắt hẳn component này để khỏi tự bay lệch.
+    /// </summary>
+    private void Awake()
+    {
+        if (NetworkRole.IsClientOnly) enabled = false;
+    }
+
+    /// <summary>
     /// Bắn viên đạn từ <paramref name="from"/> tới vị trí <paramref name="to"/>.
     /// </summary>
     /// <param name="damage">Damage gây ra cho đơn vị địch đầu tiên trúng.</param>

@@ -52,6 +52,8 @@ public class BaseSlime : Slime
         if (isAttacking) return;
         isAttacking = true;
 
+        AudioManager.PlayAttack();   // tiếng tấn công (mọi loại lính, cả 2 phe)
+
         // Không Kill tween ở đây: để cú nhảy đang dở bay hết quỹ đạo rồi đáp xuống đất,
         // nếu Kill giữa chừng lính sẽ bị treo lơ lửng trên không trung.
         isMoving = false;

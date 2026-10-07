@@ -93,6 +93,8 @@ public class Archer : Slime
         if (isAttacking) return;
         isAttacking = true;
 
+        AudioManager.PlayAttack();   // tiếng tấn công (mọi loại lính, cả 2 phe)
+
         // Không Kill tween ở đây: để cú nhảy đang dở bay hết quỹ đạo rồi đáp xuống đất,
         // nếu Kill giữa chừng lính sẽ bị treo lơ lửng trên không trung.
         isMoving = false;
@@ -126,18 +128,15 @@ public class Archer : Slime
         Vector2 spawnPosition = (Vector2)transform.position + bulletSpawnOffset;
         Bullet bullet = Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
         bullet.Launch(spawnPosition, target.transform.position, damage, blueSide, gameObject);
+
+        // MultiPlayer: đạn cũng phải do HOST sinh ra rồi đồng bộ sang client (chơi đơn: no-op).
+        NetworkRole.SpawnIfServer(bullet.gameObject);
     }
 
+    /// <summary>Quét bằng KHUNG cao bằng thân (xem <see cref="Slime.ForwardScanAll"/>).</summary>
     protected virtual bool ArcherHasAllyInFront()
     {
-        Vector2 currentPosition = transform.position;
-        Vector2 direction = ((Vector3)Destination - (Vector3)currentPosition).normalized;
-        if (direction == Vector2.zero)
-        {
-            direction = blueSide ? Vector2.right : Vector2.left;
-        }
-
-        RaycastHit2D[] hits = Physics2D.CircleCastAll(currentPosition, archerAllyCheckRadius, direction, GetAllyCheckDistance(archerAllyCheckDistance));
+        RaycastHit2D[] hits = ForwardScanAll(transform.position, GetAllyCheckDistance(archerAllyCheckDistance), archerAllyCheckRadius);
 
         foreach (RaycastHit2D hit in hits)
         {
@@ -149,15 +148,6 @@ public class Archer : Slime
     protected void OnDrawGizmosSelected()
     {
         DrawAttackGizmo(new Color(1f, 0f, 0f, 0.3f));
-
-        Vector2 direction = ((Vector3)Destination - transform.position).normalized;
-        if (direction == Vector2.zero)
-        {
-            direction = blueSide ? Vector2.right : Vector2.left;
-        }
-
-        Vector2 checkPosition = (Vector2)transform.position + direction * GetAllyCheckDistance(archerAllyCheckDistance);
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(checkPosition, archerAllyCheckRadius);
+        DrawForwardScanGizmo(transform.position, GetAllyCheckDistance(archerAllyCheckDistance), archerAllyCheckRadius, Color.yellow);
     }
 }

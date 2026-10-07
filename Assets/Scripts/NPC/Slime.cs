@@ -99,8 +99,28 @@ public class Slime : MonoBehaviour
 
     protected GameObject target;
 
+    /// <summary>
+    /// Unit này có được HOST sinh ra rồi đồng bộ sang client không (xem <see cref="NetworkRole"/>).
+    ///
+    /// Đúng với LÍNH: client KHÔNG được mô phỏng lại (vị trí/scale/rotation đã có NetworkTransform
+    /// lo), nếu chạy thêm Update/LateUpdate ở client thì lính bị cà giật và lệch khỏi bản của host.
+    /// Sai với KING: King là vật thể ĐẶT SẴN trong scene ở CẢ HAI máy nên vẫn phải tự chạy
+    /// animation (bị đánh, chết) và đọc máu đồng bộ về - xem <see cref="KingSlime"/>.
+    /// </summary>
+    protected virtual bool ReplicatedFromHost
+    {
+        get { return true; }
+    }
+
     protected virtual void Awake()
     {
+        // Client chỉ HIỂN THỊ lính do host mô phỏng: tắt hẳn component này ngay trong Awake (tức là
+        // TRƯỚC cả Start) nên không nhánh Update/LateUpdate/Start nào chạy ở client.
+        if (ReplicatedFromHost && NetworkRole.IsClientOnly)
+        {
+            enabled = false;
+        }
+
         originalScale = transform.localScale;
         originalRotation = transform.localRotation;   // anim "rướn người" lúc chờ phải trả về đúng gốc
         groundY = transform.position.y;   // mặc định: đứng ngay tại chỗ được spawn
@@ -213,8 +233,8 @@ public class Slime : MonoBehaviour
     }
 
     /// <summary>
-    /// Tầm quét đồng minh phía trước, tính từ TÂM mình (dùng cho CircleCastAll có bán kính
-    /// <see cref="allyCheckRadius"/>).
+    /// Tầm quét đồng minh phía trước, tính từ TÂM mình (dùng cho <see cref="ForwardScanAll"/> với
+    /// nửa bề rộng <see cref="allyCheckRadius"/>).
     ///
     /// Vì tia quét có bán kính nên tầm tới THẬT = giá trị này + bán kính, nên ở đây TRỪ bán kính ra
     /// để tia vừa tới đúng chỗ "cách mép trước của mình allyQueueGap". Nhờ vậy lính hết bị coi là
@@ -225,6 +245,54 @@ public class Slime : MonoBehaviour
     protected float GetAllyCheckDistance(float inspectorDistance)
     {
         return Mathf.Max(inspectorDistance, RestHalfWidth + allyQueueGap - allyCheckRadius);
+    }
+
+    /// <summary>Độ dư chiều cao của khung quét (world unit) - xem <see cref="ForwardScanAll"/>.</summary>
+    protected const float ForwardScanVerticalSlack = 1.6f;
+
+    /// <summary>
+    /// Quét vật cản PHÍA TRƯỚC (đồng minh hoặc địch) bằng một KHUNG cao bằng cả thân mình, thay vì
+    /// một hình tròn ở tâm như trước.
+    ///
+    /// Vì sao phải quét bằng khung cao - thân các đơn vị cao thấp rất khác nhau: xe bắn đá cao
+    /// 9.1-10.1 world unit, SpearMan 5.5-5.8, Sword 4.2-4.6, còn slime/Slinger/Archer chỉ 2.8-3.6.
+    /// Tâm của xe nằm cao 4.4-4.9 tính từ mặt nền, TỨC LÀ CAO HƠN ĐỈNH của slime/Slinger/Archer,
+    /// nên tia CircleCastAll ở tâm xe bay QUA ĐẦU chúng: xe không thấy đồng minh thấp đứng trước,
+    /// bước chạy không bị giới hạn, và cứ lao tới chèn qua hàng đợi (đè/đẩy đồng minh ra sau) thay
+    /// vì xếp hàng sau lưng chúng. Xem <see cref="GetClearDistanceAhead"/> (giới hạn bước chạy) và
+    /// Catapult.CatapultHasAllyInFront (dừng khi có đồng minh chắn trước).
+    ///
+    /// Khung lấy đúng chiều cao thân mình: đáy trùng mặt nền, đỉnh là đỉnh thân. Mọi đơn vị đứng
+    /// trên nền đều có thân bắt đầu từ dưới đỉnh thấp nhất (2.79) nên luôn nằm trong khung, kể cả
+    /// khi chúng đang nhảy lên (độ dư <see cref="ForwardScanVerticalSlack"/>).
+    /// </summary>
+    /// <param name="origin">Điểm bắt đầu quét (tâm đơn vị hoặc mép trước của thân).</param>
+    /// <param name="distance">Quãng quét tối đa.</param>
+    /// <param name="halfWidth">Nửa bề rộng khung (giữ nguyên ý nghĩa bán kính quét cũ).</param>
+    protected RaycastHit2D[] ForwardScanAll(Vector2 origin, float distance, float halfWidth)
+    {
+        Collider2D own = BodyCollider;
+
+        float bodyHeight = (own != null) ? own.bounds.size.y : (halfWidth * 2f);
+        Vector2 size = new Vector2(Mathf.Max(0.01f, halfWidth * 2f), bodyHeight + ForwardScanVerticalSlack);
+
+        Vector2 direction = blueSide ? Vector2.right : Vector2.left;
+        return Physics2D.BoxCastAll(origin, size, 0f, direction, distance);
+    }
+
+    /// <summary>Vẽ đúng vùng quét của <see cref="ForwardScanAll"/> (khung cao bằng thân) trong Scene view.</summary>
+    protected void DrawForwardScanGizmo(Vector2 origin, float distance, float halfWidth, Color color)
+    {
+        Collider2D own = BodyCollider;
+
+        float bodyHeight = (own != null) ? own.bounds.size.y : (halfWidth * 2f);
+        Vector2 size = new Vector2(Mathf.Max(0.01f, halfWidth * 2f), bodyHeight + ForwardScanVerticalSlack);
+
+        Vector2 direction = blueSide ? Vector2.right : Vector2.left;
+        Vector2 center = origin + direction * (distance * 0.5f);
+
+        Gizmos.color = color;
+        Gizmos.DrawWireCube(center, new Vector3(size.x, size.y, 0.01f));
     }
 
     /// <summary>
@@ -260,7 +328,17 @@ public class Slime : MonoBehaviour
     }
 
     /// <summary>
-    /// Cộng MÁU và SÁT THƯƠNG từ nâng cấp thành cho lính MỚI SPAWN của phe xanh.
+    /// Lính này có phát hiệu ứng VFX lúc bị hạ gục không (xem <see cref="VfxManager.PlayDeathSmoke"/>).
+    /// Mặc định mọi lính đều phát, riêng King TẮT vì King đã có hiệu ứng win/lose riêng ở GameManager.
+    /// </summary>
+    protected virtual bool PlaysDeathVfx
+    {
+        get { return true; }
+    }
+
+    /// <summary>
+    /// Cộng MÁU và SÁT THƯƠNG từ nâng cấp thành cho lính MỚI SPAWN, theo thành của ĐÚNG phe mình
+    /// (xanh = thành người chơi, đỏ = thành AI).
     ///
     /// PHẢI gọi ở CUỐI Start() của class con: các class con (BaseSlime, Catapult...) gán lại
     /// health/damage của prefab trong Start() nên nếu cộng sớm hơn thì giá trị sẽ bị ghi đè.
@@ -268,12 +346,11 @@ public class Slime : MonoBehaviour
     /// </summary>
     protected virtual void ApplyCastleUpgrade()
     {
-        if (!blueSide) return;             // chỉ phe người chơi (xanh) được cộng
         if (!ReceivesCastleUpgrade) return;
 
         if (GameManager.Instance == null) return;
 
-        CastleUpgrade castle = GameManager.Instance.Castle;
+        CastleUpgrade castle = GameManager.Instance.CastleFor(blueSide);
         if (castle == null || castle.CurrentLevel <= 0) return;
 
         health = Mathf.RoundToInt(health * castle.HealthMultiplier);
@@ -356,6 +433,7 @@ public class Slime : MonoBehaviour
             return;
         }
 
+        AudioManager.PlayMove();   // tiếng di chuyển (mọi loại lính đều nhảy qua hàm này)
         isMoving = true;
         // Luôn bắt đầu cú nhảy từ mặt nền (không phải từ Y đang lơ lửng) để đáp xuống đúng mặt đất.
         Vector3 startPos = new Vector3(transform.position.x, groundY, transform.position.z);
@@ -402,9 +480,7 @@ public class Slime : MonoBehaviour
 
     private bool CheckAllyBlocking()
     {
-        Vector2 rayDir = blueSide ? Vector2.right : Vector2.left;
-
-        RaycastHit2D[] hits = Physics2D.CircleCastAll(transform.position, allyCheckRadius, rayDir, GetAllyCheckDistance(allyCheckDistance));
+        RaycastHit2D[] hits = ForwardScanAll(transform.position, GetAllyCheckDistance(allyCheckDistance), allyCheckRadius);
 
         foreach (RaycastHit2D hit in hits)
         {
@@ -514,15 +590,17 @@ public class Slime : MonoBehaviour
         // Tầm quét phải phủ hết tầm đánh, nếu không lính tầm xa (Catapult bắn 9 unit ngoài mép thân)
         // sẽ không "thấy" địch từ xa để dừng lại đúng tầm mà cứ lao vào sát mới đánh.
         float maxProbe = Mathf.Max(6f, AttackGapRange + 2f);
-        Vector2 direction = blueSide ? Vector2.right : Vector2.left;
 
         Collider2D own = BodyCollider;
         float originX = (own != null)
             ? (blueSide ? own.bounds.max.x : own.bounds.min.x)
             : transform.position.x;
+        float originY = (own != null) ? own.bounds.center.y : transform.position.y;
 
-        // Quét bắt đầu từ MÉP TRƯỚC của thân nên tầm "nhìn" không bị thân to ăn hết.
-        RaycastHit2D[] hits = Physics2D.CircleCastAll(new Vector2(originX, transform.position.y), allyCheckRadius, direction, maxProbe);
+        // Quét bắt đầu từ MÉP TRƯỚC của thân nên tầm "nhìn" không bị thân to ăn hết, và quét bằng
+        // KHUNG cao bằng thân (xem ForwardScanAll): xe bắn đá cao 9-10 unit nên nếu quét bằng hình
+        // tròn ở tâm thì tia bay qua đầu các lính thấp và xe coi như không có gì chắn trước mặt.
+        RaycastHit2D[] hits = ForwardScanAll(new Vector2(originX, originY), maxProbe, allyCheckRadius);
         float clear = maxProbe;
 
         foreach (RaycastHit2D hit in hits)
@@ -896,9 +974,18 @@ public class Slime : MonoBehaviour
     protected virtual void Die()
     {
         if (moveTween != null) moveTween.Kill();
+
+        // Hiệu ứng VFX khi lính bị hạ gục (CFXR3 Hit Misc F Smoke) - King tắt qua PlaysDeathVfx.
+        if (PlaysDeathVfx) VfxManager.PlayDeathSmoke(transform.position);
+
         if (GameManager.Instance != null)
         {
             GameManager.Instance.soldierDown(characterName);
+
+            // Lính vừa chết -> thưởng tiền cho phe ĐỐI PHƯƠNG. Chơi đơn chỉ người chơi (xanh) được
+            // thưởng vì phe đỏ là AI đã có thu nhập riêng mỗi giây. King bị loại ở phía GameManager
+            // vì price = 0.
+            GameManager.Instance.AwardKillReward(blueSide, price);
         }
         Destroy(gameObject);
     }
@@ -920,6 +1007,10 @@ public class Slime : MonoBehaviour
 
     private void PlaySpawnPopEffect()
     {
+        // Hiệu ứng VFX lúc lính vừa được sinh ra (CFXR Flash) - xem VfxManager. Đặt ngay tại điểm ra
+        // lính nên phải gọi ở ĐÂY (sau AlignToGround ở Start, trước cú lao tới).
+        VfxManager.PlaySpawnFlash(transform.position);
+
         isSpawning = true;
         isMoving = true;
 

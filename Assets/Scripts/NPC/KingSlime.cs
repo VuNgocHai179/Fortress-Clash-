@@ -38,6 +38,25 @@ public class KingSlime : Slime
     }
 
     /// <summary>
+    /// King là vật thể ĐẶT SẴN trong scene ở CẢ HAI máy (không do host sinh ra) nên KHÔNG tắt
+    /// component ở client: client vẫn cần chạy animation bị đánh/chết và đọc máu host đồng bộ về.
+    /// Chỉ phần SINH TIỀN mới bị chặn ở client - xem <see cref="Start"/>.
+    /// </summary>
+    protected override bool ReplicatedFromHost
+    {
+        get { return false; }
+    }
+
+    /// <summary>
+    /// King (thành) KHÔNG phát hiệu ứng "lính bị hạ gục" khi chết - King đã có hiệu ứng riêng cho
+    /// thắng/thua ở GameManager (xem <see cref="VfxManager.PlayWinPoof"/> / <see cref="VfxManager.PlayLoseLeaves"/>).
+    /// </summary>
+    protected override bool PlaysDeathVfx
+    {
+        get { return false; }
+    }
+
+    /// <summary>
     /// King chính là bản thân "thành" nên mặc định KHÔNG được cộng máu khi nâng cấp thành.
     /// Bật <see cref="CastleUpgrade.applyToKing"/> nếu muốn thành trâu hơn theo level.
     /// </summary>
@@ -45,9 +64,11 @@ public class KingSlime : Slime
     {
         get
         {
-            return GameManager.Instance != null
-                && GameManager.Instance.Castle != null
-                && GameManager.Instance.Castle.applyToKing;
+            if (GameManager.Instance == null) return false;
+
+            // King kiểm tra applyToKing của thành ĐÚNG phe mình (xanh = người chơi, đỏ = AI).
+            CastleUpgrade castle = GameManager.Instance.CastleFor(blueSide);
+            return castle != null && castle.applyToKing;
         }
     }
 
@@ -64,6 +85,10 @@ public class KingSlime : Slime
 
         StartCoroutine(GenerateResourceRoutine());
         UpdateHealthUI();
+
+        // Client cần biết máu TỐI ĐA của King (để vẽ thanh máu đúng tỉ lệ) nên host công bố ngay
+        // khi trận vừa bắt đầu.
+        PublishHealthToClients(false);
     }
 
     protected override void Update()
@@ -106,24 +131,28 @@ public class KingSlime : Slime
     }
 
     /// <summary>
-    /// Tiền King nhả ra mỗi lượt. Phe xanh (người chơi) được cộng thưởng theo level thành,
-    /// phe đỏ (AI) luôn giữ nguyên <see cref="resourcePerTick"/>.
+    /// Tiền King nhả ra mỗi lượt, được cộng thưởng theo level thành của ĐÚNG phe mình
+    /// (xanh = thành người chơi, đỏ = thành AI).
     /// </summary>
     private int CurrentResourcePerTick
     {
         get
         {
-            if (!blueSide) return resourcePerTick;
-
-            CastleUpgrade castle = (GameManager.Instance != null) ? GameManager.Instance.Castle : null;
+            CastleUpgrade castle = (GameManager.Instance != null) ? GameManager.Instance.CastleFor(blueSide) : null;
             float multiplier = (castle != null) ? castle.IncomeMultiplier : 1f;
 
             return Mathf.RoundToInt(resourcePerTick * multiplier);
         }
     }
 
+    /// <summary>
+    /// King nhả tiền theo nhịp ngẫu nhiên. Chỉ HOST (hoặc chế độ chơi đơn) mới sinh tiền;
+    /// ở client vòng lặp thoát ngay vì tiền do host chốt rồi đồng bộ sang.
+    /// </summary>
     private IEnumerator GenerateResourceRoutine()
     {
+        if (!NetworkRole.Simulates) yield break;
+
         while (health > 0)
         {
             float waitTime = Random.Range(minTimeInterval, maxTimeInterval);
@@ -138,16 +167,13 @@ public class KingSlime : Slime
                 {
                     int income = CurrentResourcePerTick;
 
-                    if (blueSide)
-                    {
-                        GameManager.Instance.Addmoney(income);
-                        SpawnFloatingText(income);
-                    }
-                    else
-                    {
-                        GameManager.Instance.AI.Money += income;
-                        GameManager.Instance.AIMoney = GameManager.Instance.AI.Money;
-                    }
+                    // Đi qua AddKingIncome (thay vì ghi thẳng vào AI.Money) để phe ĐỎ cũng được host
+                    // công bố sang client y như phe XANH - xem chú thích ở GameManager.AddKingIncome.
+                    GameManager.Instance.AddKingIncome(blueSide, income);
+
+                    // Hiệu ứng "+N" bay lên giữ nguyên chỉ ở phe XANH như trước, để không đổi hình ảnh
+                    // của chế độ chơi đơn (nơi King đỏ thuộc về AI).
+                    if (blueSide) SpawnFloatingText(income);
                 }
             }
             else
@@ -188,6 +214,65 @@ public class KingSlime : Slime
         {
             kingAnimator.SetBool("isUnderAttack", true);
         }
+
+        // MultiPlayer: host công bố máu mới + hiệu ứng trúng đòn cho client (chơi đơn: no-op).
+        PublishHealthToClients(true);
+    }
+
+    /// <summary>
+    /// Đặt máu cho King theo ĐỘ KHÓ của level đang chơi (GameManager gọi lúc bắt đầu trận).
+    /// Ghi cả máu hiện tại lẫn máu tối đa nên gọi trước hay sau <see cref="Start"/> đều đúng,
+    /// sau đó cập nhật lại thanh máu trên UI.
+    /// </summary>
+    public void SetLevelHealth(int healthValue)
+    {
+        if (healthValue <= 0) return;
+
+        health = healthValue;
+        maxHealth = healthValue;
+        UpdateHealthUI();
+
+        // MultiPlayer: máu tối đa đổi theo level -> công bố lại cho client (chơi đơn: no-op).
+        PublishHealthToClients(false);
+    }
+
+    /// <summary>
+    /// HOST công bố máu King cho client (chơi đơn / client: không làm gì).
+    /// </summary>
+    private void PublishHealthToClients(bool playHit)
+    {
+        if (GameManager.Instance == null) return;
+
+        GameManager.Instance.PublishKingHealth(blueSide, health, maxHealth, playHit);
+    }
+
+    /// <summary>
+    /// Áp máu do HOST đồng bộ sang (client). Client CHỈ HIỂN THỊ: không tự trừ máu, không tự quyết
+    /// định thắng thua - mọi thứ đã được host chốt rồi.
+    /// </summary>
+    /// <param name="playHit">Chạy hiệu ứng trúng đòn (nảy + nhấp nháy animator) như vừa bị đánh.</param>
+    public void ApplySyncedHealth(int healthValue, int maxHealthValue, bool playHit)
+    {
+        bool wasAlive = health > 0;
+
+        health = healthValue;
+        maxHealth = maxHealthValue;
+
+        if (playHit && health > 0)
+        {
+            transform.DOComplete();
+            transform.DOPunchScale(new Vector3(0.1f, -0.1f, 0f), 0.15f, 1, 0.5f);
+
+            isUnderAttack = true;
+            attackTimer = underAttackDuration;
+            if (kingAnimator != null) kingAnimator.SetBool("isUnderAttack", true);
+        }
+
+        UpdateHealthUI();
+
+        // Máu về 0 -> chạy animation chết. Die() gọi Winner() nhưng ở client Winner() tự bỏ qua
+        // (kết quả trận do host quyết định và gửi sang qua NetworkGame).
+        if (wasAlive && health <= 0) Die();
     }
 
     private void UpdateHealthUI()

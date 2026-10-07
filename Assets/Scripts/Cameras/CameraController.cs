@@ -47,6 +47,14 @@ namespace FortressClash.Cameras
         [Tooltip("Orthographic size lúc bắt đầu. Scene đang để 12.")]
         [SerializeField] private float defaultZoom = 12f;
 
+        [Tooltip("Vào trận là zoom thẳng ra mức XA NHẤT và cố định camera ở GIỮA bề ngang map, thay vì\n" +
+                 "bắt đầu ở defaultZoom. Bật ở scene MultiPlayer: trận 2 người chơi thì cả 2 máy cần thấy\n" +
+                 "toàn map ngay khi vào, không lệch về phe nào.\n" +
+                 "Mức xa nhất vẫn là MaxAllowedZoom như khi người chơi tự lăn chuột zoom out (xem\n" +
+                 "maxZoomOutCameraY / zoomOutMargin) - hết cỡ thì camera tự căn giữa, chưa hết cỡ thì\n" +
+                 "vẫn giữa map nhưng 2 mép map có thể hụt ra ngoài khung hình.")]
+        [SerializeField] private bool startZoomedOutOnMatchStart = false;
+
         [Tooltip("Zoom gần nhất. Số càng nhỏ càng gần; 7 = nhìn được 14 đơn vị theo chiều cao.")]
         [SerializeField] private float minZoom = 7f;
 
@@ -157,7 +165,23 @@ namespace FortressClash.Cameras
 
             DetectMapBounds();   // dò biên map TRƯỚC khi dùng để tính zoom/khung hình
 
-            targetZoom = Mathf.Clamp(defaultZoom, minZoom, MaxAllowedZoom);
+            if (startZoomedOutOnMatchStart)
+            {
+                // Vào trận là thấy toàn map: zoom ra xa nhất rồi đặt camera vào GIỮA bề ngang map.
+                // Phải tự đặt X ở đây: ClampX chỉ căn giữa khi vùng nhìn đã rộng hơn cả map, còn ở
+                // mức xa nhất hiện tại (bị maxZoomOutCameraY chặn) thì vẫn còn chỗ pan nên nếu không
+                // đặt X, camera sẽ đứng nguyên ở vị trí gõ trong scene - lệch hẳn về một phe.
+                targetZoom = MaxAllowedZoom;
+
+                Vector3 startPosition = transform.position;
+                startPosition.x = (mapMinX + mapMaxX) * 0.5f;
+                transform.position = startPosition;
+            }
+            else
+            {
+                targetZoom = Mathf.Clamp(defaultZoom, minZoom, MaxAllowedZoom);
+            }
+
             cam.orthographicSize = targetZoom;
 
             PrepareBackdrop();   // phải đo nền gốc TRƯỚC khi ApplyFraming giãn nó
@@ -174,6 +198,10 @@ namespace FortressClash.Cameras
         private void Update()
         {
             if (cam == null) return;
+
+            // Trận đang TẠM DỪNG (DlgPause đặt Time.timeScale = 0): timeScale không chặn Update/Input
+            // nên phải tự chặn ở đây - không thì kéo/zoom camera vẫn chạy trong lúc game đã tạm dừng.
+            if (Time.timeScale <= 0f) return;
 
             HandleZoomInput();
             HandlePanInput();

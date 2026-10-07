@@ -107,6 +107,8 @@ public class Slinger : Slime
         if (isAttacking) return;
         isAttacking = true;
 
+        AudioManager.PlayAttack();   // tiếng tấn công (mọi loại lính, cả 2 phe)
+
         // Không Kill tween ở đây: để cú nhảy đang dở bay hết quỹ đạo rồi đáp xuống đất,
         // nếu Kill giữa chừng lính sẽ bị treo lơ lửng trên không trung.
         isMoving = false;
@@ -140,18 +142,16 @@ public class Slinger : Slime
         Vector2 spawnPosition = (Vector2)transform.position + bulletSpawnOffset;
         Bullet bullet = Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
         bullet.Launch(spawnPosition, target.transform.position, damage, blueSide, gameObject);
+
+        // MultiPlayer: đạn cũng phải do HOST sinh ra rồi đồng bộ sang client (chơi đơn: no-op).
+        NetworkRole.SpawnIfServer(bullet.gameObject);
     }
 
+    /// <summary>Quét bằng KHUNG cao bằng thân (xem <see cref="Slime.ForwardScanAll"/>).</summary>
     protected virtual bool SlingerHasAllyInFront()
     {
-        Vector2 currentPosition = transform.position;
-        Vector2 direction = ((Vector3)Destination - (Vector3)currentPosition).normalized;
-        if (direction == Vector2.zero)
-        {
-            direction = blueSide ? Vector2.right : Vector2.left;
-        }
+        RaycastHit2D[] hits = ForwardScanAll(transform.position, GetAllyCheckDistance(slingerAllyCheckDistance), slingerAllyCheckRadius);
 
-        RaycastHit2D[] hits = Physics2D.CircleCastAll(currentPosition, slingerAllyCheckRadius, direction, GetAllyCheckDistance(slingerAllyCheckDistance));
         foreach (RaycastHit2D hit in hits)
         {
             if (IsBlockingAlly(hit.collider)) return true;
@@ -161,14 +161,7 @@ public class Slinger : Slime
 
     protected void OnDrawGizmosSelected()
     {
-        Vector2 direction = ((Vector3)Destination - transform.position).normalized;
-        if (direction == Vector2.zero)
-        {
-            direction = blueSide ? Vector2.right : Vector2.left;
-        }
-        Vector2 checkPosition = (Vector2)transform.position + direction * GetAllyCheckDistance(slingerAllyCheckDistance);
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(checkPosition, slingerAllyCheckRadius);
+        DrawForwardScanGizmo(transform.position, GetAllyCheckDistance(slingerAllyCheckDistance), slingerAllyCheckRadius, Color.cyan);
         DrawAttackGizmo(new Color(0f, 1f, 1f, 0.3f));
     }
 }
