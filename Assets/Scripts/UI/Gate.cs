@@ -36,7 +36,7 @@ public class Gate : MonoBehaviour
 
         foreach (Collider2D collider in colliders)
         {
-            if (collider.GetComponent<Soldier>() != null && oppositeSide == "red")
+            if (collider.GetComponent<Slime>() != null && oppositeSide == "red")
             {
                 return false;
             }

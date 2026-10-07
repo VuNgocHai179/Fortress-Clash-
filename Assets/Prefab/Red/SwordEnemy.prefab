@@ -11,9 +11,11 @@ GameObject:
   - component: {fileID: 3201971919064920404}
   - component: {fileID: 6861095031024992391}
   - component: {fileID: 8056072732210273931}
-  - component: {fileID: 8305365852761589162}
-  - component: {fileID: 5700512034055416016}
   - component: {fileID: 7828070777597952526}
+  - component: {fileID: 5779511945473817456}
+  - component: {fileID: 5145479768266061758}
+  - component: {fileID: 1277481615487231324}
+  - component: {fileID: 3137278238169730150}
   m_Layer: 0
   m_Name: SwordEnemy
   m_TagString: enemy
@@ -31,7 +33,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 9.554937, y: 2.9421687, z: -0.17194843}
-  m_LocalScale: {x: 3, y: 3, z: 3}
+  m_LocalScale: {x: 5, y: 5, z: 5}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -79,7 +81,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 3
   m_Sprite: {fileID: -713537631270826339, guid: 7c9ba5bc8d1cd66478c9c8b8fbfa366a, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -100,54 +102,66 @@ MonoBehaviour:
   m_GameObject: {fileID: 2689597940771274120}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2143b3cc0c764084bad11802e2d83801, type: 3}
+  m_Script: {fileID: 11500000, guid: 39de04733fe64dcca659d757e4af41e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Velocity: 30
-  BlueSide: 0
-  Destination: {x: 0, y: 0}
-  SpawnPosition: {x: 0, y: 0}
-  AttackRange: 1.5
-  Health: 1000
-  Damage: 0
-  Price: 682
-  priceDrop: 0
-  JumpDistance: 5
-  JumpHeight: 0.25
-  JumpDuration: 0.3
-  JumpDelay: 0.05
-  AllyCheckDistance: 0.7
-  AllyCheckRadius: 0.25
-  Name: RedSword
---- !u!50 &8305365852761589162
-Rigidbody2D:
-  serializedVersion: 5
+  velocity: 3.2
+  blueSide: 0
+  Destination: {x: 0, y: 0, z: 0}
+  SpawnPosition: {x: 0, y: 0, z: 0}
+  attackRange: 3.1
+  arriveDistance: 1.5
+  spawnDashDistance: 4
+  health: 65
+  damage: 16
+  price: 30
+  priceDrop: 5
+  jumpPower: 1.5
+  jumpDuration: 0.35
+  jumpDelay: 0.05
+  numJumps: 1
+  enableIdleAnimation: 1
+  idleSquashAmount: 0.08
+  idleBreathDuration: 0.9
+  idleLeanAngle: 5
+  pressForwardDistance: 1
+  pressForwardSpeed: 6
+  allyCheckDistance: 1.5
+  allyCheckRadius: 0.4
+  allyQueueGap: 1
+  enemyMinGap: 0.5
+  groundYOffset: 0
+  characterName: RedSword
+  damageFlashColor: {r: 1, g: 0.3, b: 0.3, a: 1}
+  damageFlashDuration: 0.07
+  damageFlashBlinks: 2
+  swordAttackRange: 3.1
+  swordAllyCheckDistance: 0.7
+  swordAllyCheckRadius: 0.25
+--- !u!95 &7828070777597952526
+Animator:
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2689597940771274120}
-  m_BodyType: 0
-  m_Simulated: 1
-  m_UseFullKinematicContacts: 0
-  m_UseAutoMass: 0
-  m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_GravityScale: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_Interpolate: 0
-  m_SleepingMode: 1
-  m_CollisionDetection: 0
-  m_Constraints: 4
---- !u!60 &5700512034055416016
-PolygonCollider2D:
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 7c1ea1f097c50a846962ad55965c41c7, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!61 &5779511945473817456
+BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -180,7 +194,7 @@ PolygonCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: 0.035560697}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -190,51 +204,105 @@ PolygonCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Points:
-    m_Paths:
-    - - {x: 0.435, y: -0.035}
-      - {x: 0.375, y: 0.055}
-      - {x: 0.33499998, y: 0.235}
-      - {x: 0.225, y: 0.39499998}
-      - {x: 0.095, y: 0.415}
-      - {x: -0.044999998, y: 0.385}
-      - {x: -0.16499999, y: 0.21499999}
-      - {x: -0.175, y: 0.114999995}
-      - {x: -0.225, y: 0.305}
-      - {x: -0.36499998, y: 0.48499998}
-      - {x: -0.445, y: 0.48499998}
-      - {x: -0.475, y: 0.475}
-      - {x: -0.49499997, y: 0.385}
-      - {x: -0.49499997, y: 0.185}
-      - {x: -0.465, y: 0.044999998}
-      - {x: -0.48499998, y: -0.16499999}
-      - {x: -0.405, y: -0.21499999}
-      - {x: -0.355, y: -0.42499998}
-      - {x: -0.315, y: -0.435}
-      - {x: 0.325, y: -0.435}
-      - {x: 0.385, y: -0.42499998}
-      - {x: 0.45499998, y: -0.315}
-      - {x: 0.45499998, y: -0.145}
-  m_UseDelaunayMesh: 0
---- !u!95 &7828070777597952526
-Animator:
-  serializedVersion: 7
+  m_Size: {x: 1.01, y: 0.9188786}
+  m_EdgeRadius: 0
+--- !u!50 &5145479768266061758
+Rigidbody2D:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2689597940771274120}
+  m_BodyType: 1
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
+--- !u!114 &1277481615487231324
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2689597940771274120}
   m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 7c1ea1f097c50a846962ad55965c41c7, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 2856544317
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &3137278238169730150
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2689597940771274120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkTransformExpanded: 0
+  AutoOwnerAuthorityTickOffset: 1
+  PositionInterpolationType: 0
+  RotationInterpolationType: 0
+  ScaleInterpolationType: 0
+  PositionLerpSmoothing: 1
+  PositionMaxInterpolationTime: 0.1
+  RotationLerpSmoothing: 1
+  RotationMaxInterpolationTime: 0.1
+  ScaleLerpSmoothing: 1
+  ScaleMaxInterpolationTime: 0.1
+  AuthorityMode: 0
+  TickSyncChildren: 0
+  UseUnreliableDeltas: 0
+  SyncPositionX: 1
+  SyncPositionY: 1
+  SyncPositionZ: 1
+  SyncRotAngleX: 1
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 1
+  SyncScaleX: 1
+  SyncScaleY: 1
+  SyncScaleZ: 1
+  PositionThreshold: 0.001
+  RotAngleThreshold: 0.01
+  ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 0
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 0
+  InLocalSpace: 0
+  SwitchTransformSpaceWhenParented: 0
+  Interpolate: 1
+  SlerpPosition: 0

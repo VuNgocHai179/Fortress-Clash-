@@ -6,8 +6,6 @@ TagManager:
   tags:
   - enemy
   - ally
-  - enemygate
-  - allygate
   layers:
   - Default
   - TransparentFX
@@ -15,7 +13,7 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - Particle
   - 
   - 
   - 
@@ -44,6 +42,9 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Particle
+    uniqueID: 4024469655
     locked: 0
   m_RenderingLayers:
   - Default

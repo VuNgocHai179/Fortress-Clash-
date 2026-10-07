@@ -29,6 +29,21 @@ TextureImporter:
   - first:
       213: -8621434504218542063
     second: soldier_8
+  - first:
+      213: -8100000000000000001
+    second: soldier_11_feet
+  - first:
+      213: -8100000000000000002
+    second: soldier_12_feet
+  - first:
+      213: -8100000000000000003
+    second: soldier_13_feet
+  - first:
+      213: -8100000000000000004
+    second: soldier_14_feet
+  - first:
+      213: -8100000000000000005
+    second: soldier_15_feet
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -246,6 +261,116 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: soldier_11_feet
+      rect:
+        serializedVersion: 2
+        x: 22
+        y: 288
+        width: 139
+        height: 155
+      alignment: 9
+      pivot: {x: 0.5, y: 0.3355}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2a10d43261726f540000000000000001
+      internalID: -8100000000000000001
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: soldier_12_feet
+      rect:
+        serializedVersion: 2
+        x: 212
+        y: 289
+        width: 144
+        height: 145
+      alignment: 9
+      pivot: {x: 0.5, y: 0.3448}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2a10d43261726f540000000000000002
+      internalID: -8100000000000000002
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: soldier_13_feet
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 288
+        width: 142
+        height: 147
+      alignment: 9
+      pivot: {x: 0.5, y: 0.3469}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2a10d43261726f540000000000000003
+      internalID: -8100000000000000003
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: soldier_14_feet
+      rect:
+        serializedVersion: 2
+        x: 21
+        y: 31
+        width: 140
+        height: 158
+      alignment: 9
+      pivot: {x: 0.5, y: 0.3291}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2a10d43261726f540000000000000004
+      internalID: -8100000000000000004
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: soldier_15_feet
+      rect:
+        serializedVersion: 2
+        x: 219
+        y: 30
+        width: 147
+        height: 143
+      alignment: 9
+      pivot: {x: 0.5, y: 0.3706}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2a10d43261726f540000000000000005
+      internalID: -8100000000000000005
+      vertices: []
+      indices:
+      edges: []
+      weights: []
     outline: []
     customData: 
     physicsShape: []
@@ -266,6 +391,11 @@ TextureImporter:
       soldier_13: -2411736328533753459
       soldier_14: -2451782394016434471
       soldier_15: -6676640116428088755
+      soldier_11_feet: -8100000000000000001
+      soldier_12_feet: -8100000000000000002
+      soldier_13_feet: -8100000000000000003
+      soldier_14_feet: -8100000000000000004
+      soldier_15_feet: -8100000000000000005
       soldier_7: 3240119343033235501
       soldier_8: -8621434504218542063
   mipmapLimitGroupName: 

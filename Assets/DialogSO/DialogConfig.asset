@@ -17,3 +17,9 @@ MonoBehaviour:
     dialogPrefab: {fileID: 1009421192158085923, guid: 113a20f882c76a543a38b80a86d5d1ee, type: 3}
   - dialogName: Loading
     dialogPrefab: {fileID: 7205334183325395124, guid: e10130b851a3aac44841bf19ebbadce7, type: 3}
+  - dialogName: LevelScene
+    dialogPrefab: {fileID: 9990000000000000001, guid: 8e0bfccbc25570c48ad1e4ba5c48107e, type: 3}
+  - dialogName: DlgResult
+    dialogPrefab: {fileID: 1000000000000000005, guid: 5d2b7e9c3f1a48c6a9e4b0d8c7f31e24, type: 3}
+  - dialogName: DlgPause
+    dialogPrefab: {fileID: 7604318865000000421, guid: a5e0a82ad55274649bc4109bdcdff509, type: 3}

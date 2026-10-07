@@ -1,0 +1,20 @@
+<linker>
+  <!--
+    Giữ nguyên 2 assembly dùng REFLECTION, để bật Managed Stripping Level = Medium an toàn
+    (xem ProjectSettings/ProjectSettings.asset > managedStrippingLevel: Medium cho Android + Standalone).
+
+    Unity.Netcode.Runtime
+      Netcode for GameObjects tra type/field bằng reflection lúc chạy: serialize NetworkVariable,
+      đăng ký prefab theo GlobalObjectIdHash, dựng RPC. Strip nhầm thì MultiPlayer vỡ theo kiểu rất
+      khó lần ra (chỉ lỗi trên build, không lỗi trong Editor), nên giữ nguyên cả assembly.
+
+    Unity.InferenceEngine
+      Bộ não AI (Assets/Scripts/NPC/AI.cs) chạy model ONNX qua Worker/Tensor; engine có các đường
+      dẫn reflection và Burst job. Giữ nguyên để chắc chắn AI vẫn quyết định được trên build.
+
+    Muốn build nhỏ hơn nữa: thay preserve="all" bằng danh sách type cụ thể, rồi chạy thử CẢ chơi đơn
+    lẫn MultiPlayer trên build thật trước khi phát hành.
+  -->
+  <assembly fullname="Unity.Netcode.Runtime" preserve="all" />
+  <assembly fullname="Unity.InferenceEngine" preserve="all" />
+</linker>

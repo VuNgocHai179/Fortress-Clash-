@@ -11,9 +11,11 @@ GameObject:
   - component: {fileID: 5207743559983227483}
   - component: {fileID: 1715922184128062288}
   - component: {fileID: 8318775712174128224}
-  - component: {fileID: 7853904146633224729}
-  - component: {fileID: 5352954997318359840}
   - component: {fileID: 6977922087968551826}
+  - component: {fileID: 2737326800457817377}
+  - component: {fileID: 7428370624387023009}
+  - component: {fileID: 6908493213973021042}
+  - component: {fileID: 861366986299089916}
   m_Layer: 0
   m_Name: SlingShotEnemy
   m_TagString: enemy
@@ -31,7 +33,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -13.67462, y: 4.6413574, z: -0.10816212}
-  m_LocalScale: {x: 3, y: 3, z: 3}
+  m_LocalScale: {x: 5, y: 5, z: 5}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -79,7 +81,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 3
   m_Sprite: {fileID: -1088122156696879129, guid: 2ba5bc9fa577680418a26e3275b2e556, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -100,56 +102,70 @@ MonoBehaviour:
   m_GameObject: {fileID: 5911374843190955309}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e75ce0675a5cf0b4fad7eee164c213b3, type: 3}
+  m_Script: {fileID: 11500000, guid: e9761e5e2fd3410099da7d47ef0d0a87, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Velocity: 20
-  BlueSide: 0
-  Destination: {x: 0, y: 0}
-  SpawnPosition: {x: 0, y: 0}
-  AttackRange: 1.5
-  Health: 0
-  Damage: 0
-  Price: 500
+  velocity: 3
+  blueSide: 0
+  Destination: {x: 0, y: 0, z: 0}
+  SpawnPosition: {x: 0, y: 0, z: 0}
+  attackRange: 10
+  arriveDistance: 1.5
+  spawnDashDistance: 4
+  health: 30
+  damage: 9
+  price: 20
   priceDrop: 0
-  JumpDistance: 0.5
-  JumpHeight: 0.25
-  JumpDuration: 0.3
-  JumpDelay: 0.05
-  AllyCheckDistance: 0.7
-  AllyCheckRadius: 0.25
-  Name: RedSlinger
-  ArcherAllyCheckDistance: 1.5
-  ArcherAllyCheckRadius: 0.35
---- !u!50 &7853904146633224729
-Rigidbody2D:
-  serializedVersion: 5
+  jumpPower: 1.5
+  jumpDuration: 0.35
+  jumpDelay: 0.05
+  numJumps: 1
+  enableIdleAnimation: 1
+  idleSquashAmount: 0.08
+  idleBreathDuration: 0.9
+  idleLeanAngle: 5
+  pressForwardDistance: 1
+  pressForwardSpeed: 6
+  allyCheckDistance: 1.5
+  allyCheckRadius: 0.4
+  allyQueueGap: 1
+  enemyMinGap: 0.5
+  groundYOffset: 0
+  characterName: RedSlinger
+  damageFlashColor: {r: 1, g: 0.3, b: 0.3, a: 1}
+  damageFlashDuration: 0.07
+  damageFlashBlinks: 2
+  slingerAttackRange: 10
+  slingerAllyCheckDistance: 1.2
+  slingerAllyCheckRadius: 0.5
+  bulletPrefab: {fileID: -1661481527887929281, guid: e3dd370351291ba4390f46e5829206d0, type: 3}
+  bulletSpawnOffset: {x: -1.5, y: 0.3}
+  fallbackFireInterval: 1.5
+  minFireInterval: 0.2
+--- !u!95 &6977922087968551826
+Animator:
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5911374843190955309}
-  m_BodyType: 0
-  m_Simulated: 1
-  m_UseFullKinematicContacts: 0
-  m_UseAutoMass: 0
-  m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_GravityScale: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_Interpolate: 0
-  m_SleepingMode: 1
-  m_CollisionDetection: 0
-  m_Constraints: 4
---- !u!60 &5352954997318359840
-PolygonCollider2D:
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: f319c713882c3d3408864baa844d8254, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!61 &2737326800457817377
+BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -182,7 +198,7 @@ PolygonCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: 0.035303384}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -192,41 +208,105 @@ PolygonCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Points:
-    m_Paths:
-    - - {x: 0.225, y: 0.22999999}
-      - {x: 0.095, y: 0.29}
-      - {x: -0.155, y: 0.34}
-      - {x: -0.305, y: 0.34}
-      - {x: -0.36499998, y: 0.32}
-      - {x: -0.39499998, y: 0.28}
-      - {x: -0.415, y: 0}
-      - {x: -0.415, y: -0.21}
-      - {x: -0.295, y: -0.29}
-      - {x: 0.285, y: -0.29}
-      - {x: 0.39499998, y: -0.19}
-      - {x: 0.39499998, y: 0.01}
-      - {x: 0.345, y: 0.13}
-  m_UseDelaunayMesh: 0
---- !u!95 &6977922087968551826
-Animator:
-  serializedVersion: 7
+  m_Size: {x: 0.87, y: 0.62939316}
+  m_EdgeRadius: 0
+--- !u!50 &7428370624387023009
+Rigidbody2D:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5911374843190955309}
+  m_BodyType: 1
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
+--- !u!114 &6908493213973021042
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5911374843190955309}
   m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: f319c713882c3d3408864baa844d8254, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 1688841470
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &861366986299089916
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5911374843190955309}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkTransformExpanded: 0
+  AutoOwnerAuthorityTickOffset: 1
+  PositionInterpolationType: 0
+  RotationInterpolationType: 0
+  ScaleInterpolationType: 0
+  PositionLerpSmoothing: 1
+  PositionMaxInterpolationTime: 0.1
+  RotationLerpSmoothing: 1
+  RotationMaxInterpolationTime: 0.1
+  ScaleLerpSmoothing: 1
+  ScaleMaxInterpolationTime: 0.1
+  AuthorityMode: 0
+  TickSyncChildren: 0
+  UseUnreliableDeltas: 0
+  SyncPositionX: 1
+  SyncPositionY: 1
+  SyncPositionZ: 1
+  SyncRotAngleX: 1
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 1
+  SyncScaleX: 1
+  SyncScaleY: 1
+  SyncScaleZ: 1
+  PositionThreshold: 0.001
+  RotAngleThreshold: 0.01
+  ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 0
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 0
+  InLocalSpace: 0
+  SwitchTransformSpaceWhenParented: 0
+  Interpolate: 1
+  SlerpPosition: 0
