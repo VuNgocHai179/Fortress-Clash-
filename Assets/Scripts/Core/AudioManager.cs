@@ -5,13 +5,14 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
-/// Quản lý TOÀN BỘ âm thanh của game: nhạc nền + 6 hiệu ứng.
+/// Quản lý TOÀN BỘ âm thanh của game: nhạc nền + 8 hiệu ứng.
 ///
 /// - Nhạc nền phát lặp vô hạn và KHÔNG ngắt khi đổi scene: object này được <see cref="Singleton{T}"/>
-///   đặt DontDestroyOnLoad nên bản nhạc chạy xuyên suốt mọi scene.
-///   Scene cốt truyện (mặc định "Cutscene") phát bài riêng <see cref="cutsceneClip"/>
-///   (Fairy_tale_music), mọi scene khác dùng <see cref="bgmClip"/> (BG_slimeBang) - xem
-///   <see cref="ApplyMusicForScene"/>.
+///   đặt DontDestroyOnLoad nên bản nhạc chạy xuyên suốt mọi scene. Bài nhạc chọn theo TÊN SCENE
+///   (xem <see cref="ApplyMusicForScene"/>):
+///     + scene CHƠI (mặc định "Gameplay" và "MultiPlayer") -> <see cref="gameplayClip"/> (BG_Game);
+///     + scene cốt truyện (mặc định "Cutscene")             -> <see cref="cutsceneClip"/> (Fairy_tale_music);
+///     + mọi scene còn lại (menu...)                        -> <see cref="bgmClip"/> (BG_slimeBang).
 /// - Hiệu ứng phát bằng <see cref="AudioSource.PlayOneShot(AudioClip, float)"/> nên NHIỀU lính
 ///   cùng đánh/nhảy một lúc vẫn nghe được chồng tiếng, không cắt nhau.
 /// - Tiếng <c>buttonclick</c> được gắn TỰ ĐỘNG cho mọi Button nhờ <see cref="ButtonClickSound"/>
@@ -22,8 +23,9 @@ using UnityEngine.UI;
 ///
 /// CÁCH DÙNG (tự nạp - KHÔNG gắn component này vào scene nào):
 ///   1. Toàn bộ clip + mức âm lượng nằm trong prefab <c>Assets/Resources/AudioManager.prefab</c>.
-///      Gán 8 clip ở đó: Bgm (BG_slimeBang), Cutscene (Fairy_tale_music), Attack (attack),
-///      Button Click (buttonclick), Lose (losse), Move (move), Upgrade (Upgrade), Win (wiin).
+///      Gán 11 clip ở đó: Bgm (BG_slimeBang), Gameplay (BG_Game), Cutscene (Fairy_tale_music),
+///      Attack (attack), Button Click (buttonclick), Lose (losse), Move (move), Upgrade (Upgrade),
+///      Win (wiin), Meteor (meteorite), Summon (summon).
 ///   2. <see cref="Bootstrap"/> chạy ngay sau khi scene đầu tiên load xong, Instantiate prefab đó, và
 ///      <see cref="Singleton{T}"/> đặt DontDestroyOnLoad -> âm thanh có mặt ở MỌI scene, MỌI lối vào
 ///      game (chơi từ MainMenu, bấm Play trực tiếp trong Gameplay/MultiPlayer, hay bản clone ParrelSync).
@@ -35,7 +37,8 @@ using UnityEngine.UI;
 /// Không cần gán AudioSource: để trống thì tự tạo trên chính object này.
 ///
 /// Mọi chỗ khác gọi qua API tĩnh cho gọn: <see cref="PlayAttack"/>, <see cref="PlayMove"/>,
-/// <see cref="PlayButtonClick"/>, <see cref="PlayUpgrade"/>, <see cref="PlayWin"/>, <see cref="PlayLose"/>.
+/// <see cref="PlayButtonClick"/>, <see cref="PlayUpgrade"/>, <see cref="PlayMeteor"/>,
+/// <see cref="PlaySummon"/>, <see cref="PlayMatchResult"/>.
 /// Chưa có AudioManager trong scene thì các hàm này "im lặng" (null-check), game không lỗi.
 /// </summary>
 public class AudioManager : Singleton<AudioManager>
@@ -58,6 +61,13 @@ public class AudioManager : Singleton<AudioManager>
     [Tooltip("Tên scene phát cutsceneClip thay cho nhạc nền chung.")]
     [SerializeField] private string cutsceneSceneName = "Cutscene";
 
+    [Tooltip("Nhạc RIÊNG cho các SCENE CHƠI (BG_Game). Để trống thì scene chơi dùng nhạc nền chung.")]
+    [SerializeField] private AudioClip gameplayClip;
+
+    [Tooltip("Tên các scene được coi là ĐANG CHƠI -> phát gameplayClip (BG_Game). " +
+             "Sửa được trong Inspector nếu sau này đổi tên scene hoặc thêm màn chơi mới.")]
+    [SerializeField] private string[] gameplaySceneNames = { "Gameplay", "MultiPlayer" };
+
     [Range(0f, 1f)]
     [SerializeField] private float musicVolume = 0.5f;
 
@@ -71,8 +81,15 @@ public class AudioManager : Singleton<AudioManager>
     [Tooltip("losse.mp3 - khi THUA game.")]
     [SerializeField] private AudioClip loseClip;
 
+    [Tooltip("meteorite.mp3 - khi dùng kỹ năng THIÊN THẠCH (nút btn_meteor - xem AbilityBar.CastMeteor).")]
+    [SerializeField] private AudioClip meteorClip;
+
     [Tooltip("move.mp3 - khi slime di chuyển (mỗi cú nhảy).")]
     [SerializeField] private AudioClip moveClip;
+
+    [Tooltip("summon.mp3 - khi dùng kỹ năng TĂNG VIỆN (nút btn_reinfor_blue - xem " +
+             "AbilityBar.CallReinforcement).")]
+    [SerializeField] private AudioClip summonClip;
 
     [Tooltip("Upgrade.mp3 - khi nâng cấp thành thành công.")]
     [SerializeField] private AudioClip upgradeClip;
@@ -184,23 +201,20 @@ public class AudioManager : Singleton<AudioManager>
     }
 
     /// <summary>
-    /// Chọn bài nhạc cho scene đang chạy: scene cốt truyện (<see cref="cutsceneSceneName"/>) dùng
-    /// <see cref="cutsceneClip"/> (Fairy_tale_music), mọi scene khác dùng <see cref="bgmClip"/>
-    /// (BG_slimeBang).
+    /// Chọn bài nhạc cho scene đang chạy, theo TÊN SCENE với thứ tự ưu tiên:
+    ///   1. scene CHƠI (<see cref="gameplaySceneNames"/>, mặc định Gameplay + MultiPlayer) -> <see cref="gameplayClip"/> (BG_Game);
+    ///   2. scene cốt truyện (<see cref="cutsceneSceneName"/>) -> <see cref="cutsceneClip"/> (Fairy_tale_music);
+    ///   3. mọi scene còn lại (MainMenu...) -> <see cref="bgmClip"/> (BG_slimeBang).
+    /// Ô clip nào để trống thì tự rơi xuống bài nhạc nền chung, không im lặng mất nhạc.
     ///
     /// CÙNG bài thì để nhạc chạy liền mạch (không ngắt quãng mỗi lần đổi scene); KHÁC bài thì đổi clip
-    /// rồi phát lại từ đầu - nhờ vậy vào/ra scene Cutscene là đổi được bài.
+    /// rồi phát lại từ đầu - nhờ vậy vào/ra scene Cutscene, hay vào màn chơi, là đổi được bài.
     /// </summary>
     private void ApplyMusicForScene(Scene scene)
     {
         if (musicSource == null) return;
 
-        bool useCutscene = scene.IsValid()
-            && !string.IsNullOrEmpty(cutsceneSceneName)
-            && scene.name == cutsceneSceneName
-            && cutsceneClip != null;
-
-        AudioClip clip = useCutscene ? cutsceneClip : bgmClip;
+        AudioClip clip = ChooseMusicClip(scene);
 
         if (clip == null)
         {
@@ -217,6 +231,38 @@ public class AudioManager : Singleton<AudioManager>
         musicSource.clip = clip;
         musicSource.volume = musicVolume;
         musicSource.Play();
+    }
+
+    /// <summary>Bài nhạc của 1 scene (xem thứ tự ưu tiên ở <see cref="ApplyMusicForScene"/>).</summary>
+    private AudioClip ChooseMusicClip(Scene scene)
+    {
+        if (scene.IsValid())
+        {
+            if (IsGameplayScene(scene.name) && gameplayClip != null) return gameplayClip;
+
+            if (!string.IsNullOrEmpty(cutsceneSceneName)
+                && scene.name == cutsceneSceneName
+                && cutsceneClip != null) return cutsceneClip;
+        }
+
+        return bgmClip;
+    }
+
+    /// <summary>Tên scene này có nằm trong danh sách SCENE CHƠI không (so khớp không phân biệt hoa/thường).</summary>
+    private bool IsGameplayScene(string sceneName)
+    {
+        if (gameplaySceneNames == null || string.IsNullOrEmpty(sceneName)) return false;
+
+        for (int i = 0; i < gameplaySceneNames.Length; i++)
+        {
+            if (!string.IsNullOrEmpty(gameplaySceneNames[i])
+                && string.Equals(gameplaySceneNames[i], sceneName, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Nạp mức âm lượng đã lưu ở lần chơi trước (nếu có), đè lên giá trị mặc định trong Inspector.</summary>
@@ -299,16 +345,37 @@ public class AudioManager : Singleton<AudioManager>
         if (Instance != null) Instance.PlaySfx(Instance.upgradeClip);
     }
 
-    /// <summary>Tiếng thắng game (gọi ở popup kết quả khi người chơi thắng).</summary>
-    public static void PlayWin()
+    /// <summary>Tiếng dùng kỹ năng THIÊN THẠCH (nút btn_meteor - xem <c>AbilityBar.CastMeteor</c>).</summary>
+    public static void PlayMeteor()
     {
-        if (Instance != null) Instance.PlaySfx(Instance.winClip);
+        if (Instance != null) Instance.PlaySfx(Instance.meteorClip);
     }
 
-    /// <summary>Tiếng thua game (gọi ở popup kết quả khi người chơi thua).</summary>
-    public static void PlayLose()
+    /// <summary>Tiếng dùng kỹ năng TĂNG VIỆN (nút btn_reinfor_blue - xem <c>AbilityBar.CallReinforcement</c>).</summary>
+    public static void PlaySummon()
     {
-        if (Instance != null) Instance.PlaySfx(Instance.loseClip);
+        if (Instance != null) Instance.PlaySfx(Instance.summonClip);
+    }
+
+    /// <summary>
+    /// ÂM THANH LÚC KẾT THÚC TRẬN: tắt nhạc nền và MỌI hiệu ứng đang dở rồi chỉ phát đúng tiếng thắng
+    /// (wiin.mp3) hoặc thua (losse.mp3) - nhờ vậy ở trạng thái Win/Lose không còn tiếng nào khác lẫn vào.
+    /// Gọi từ <c>DlgResult</c> (nơi cũng đặt <c>Time.timeScale = 0</c> để đóng băng trận).
+    /// </summary>
+    /// <param name="playerWon">true = người chơi cục bộ THẮNG (phát wiin), false = THUA (phát losse).</param>
+    public static void PlayMatchResult(bool playerWon)
+    {
+        if (Instance != null) Instance.PlayMatchResultInternal(playerWon);
+    }
+
+    private void PlayMatchResultInternal(bool playerWon)
+    {
+        // Cắt nhạc nền + các tiếng đang chồng (lính đánh, tiếng nút...) TRƯỚC khi phát tiếng kết quả:
+        // Stop() trên nguồn hiệu ứng dừng luôn cả các PlayOneShot đang chạy.
+        if (musicSource != null) musicSource.Stop();
+        if (sfxSource != null) sfxSource.Stop();
+
+        PlaySfx(playerWon ? winClip : loseClip);
     }
 
     private void PlayAttackInternal()

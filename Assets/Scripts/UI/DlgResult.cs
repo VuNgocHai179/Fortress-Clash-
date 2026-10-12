@@ -16,6 +16,11 @@ namespace FortressClash.UI
     /// - Nút hành động chính: THẮNG ghi "Next Level" và đưa người chơi VỀ LẠI MÀN CHỌN LEVEL
     ///   (scene MainMenu + mở sẵn dialog <see cref="LevelSelectDialog"/>) để vào level vừa mở khóa;
     ///   THUA ghi "Replay" và CHƠI LẠI đúng level vừa thua.
+    ///
+    /// TRẠNG THÁI WIN/LOSE (xem <see cref="EnterResultState"/>): vào popup là ÂM THANH chỉ còn tiếng
+    /// thắng (wiin) hoặc thua (losse) - nhạc nền và mọi tiếng đang chồng đều bị tắt trước - và trận đấu
+    /// ĐÓNG BĂNG (<c>Time.timeScale = 0</c>). Thời gian chỉ chạy lại khi rời popup
+    /// (<see cref="LeaveResultState"/>), để màn "Loading" lúc đổi scene không bị đứng im.
     /// </summary>
     public class DlgResult : BaseDialog
     {
@@ -57,7 +62,7 @@ namespace FortressClash.UI
         public void ShowWin(int level, int newlyUnlockedLevel)
         {
             Debug.Log($"DlgResult: thắng level {level} (mở khóa: {newlyUnlockedLevel}).");
-            AudioManager.PlayWin();
+            EnterResultState(true);
             SetContent(winSprite, winButtonLabel, GoToLevelSelect);
         }
 
@@ -65,7 +70,7 @@ namespace FortressClash.UI
         public void ShowLose(int level)
         {
             Debug.Log($"DlgResult: thua level {level}.");
-            AudioManager.PlayLose();
+            EnterResultState(false);
             SetContent(loseSprite, loseButtonLabel, ReplayCurrentLevel);
         }
 
@@ -85,8 +90,7 @@ namespace FortressClash.UI
         public void ShowMultiplayerResult(bool localPlayerWon)
         {
             Debug.Log($"DlgResult: MultiPlayer {(localPlayerWon ? "Win" : "Lose")}.");
-            if (localPlayerWon) AudioManager.PlayWin();
-            else AudioManager.PlayLose();
+            EnterResultState(localPlayerWon);
             SetContent(localPlayerWon ? winSprite : loseSprite, multiplayerButtonLabel, LeaveMultiplayer);
         }
 
@@ -127,9 +131,53 @@ namespace FortressClash.UI
             actionButton.onClick.RemoveAllListeners();
             actionButton.onClick.AddListener(() =>
             {
+                // Hide() trả lại Time.timeScale = 1 (xem LeaveResultState) TRƯỚC khi đổi scene: màn
+                // "Loading" của UIManager đếm tiến trình bằng Time.deltaTime nên còn đóng băng là nó đứng im.
                 Hide();
                 action?.Invoke();
             });
+        }
+
+        // ==========================================
+        // TRẠNG THÁI WIN / LOSE
+        // ==========================================
+
+        /// <summary>
+        /// TRUE nếu chính popup này đã đặt <see cref="Time.timeScale"/> = 0. Dùng để chỉ trả lại 1 khi
+        /// thật sự do mình đóng băng (không ghi đè trạng thái pause của nơi khác).
+        /// </summary>
+        private bool frozeMatch;
+
+        /// <summary>
+        /// Vào TRẠNG THÁI WIN/LOSE: âm thanh chỉ còn đúng tiếng thắng hoặc thua - <see
+        /// cref="AudioManager.PlayMatchResult"/> tắt nhạc nền cùng mọi tiếng đang chồng trước khi phát -
+        /// và trận đấu ĐÓNG BĂNG hẳn (<see cref="Time.timeScale"/> = 0) để không còn gì diễn ra sau đó.
+        ///
+        /// Vẫn phải trả lại timeScale = 1 khi rời popup (xem <see cref="LeaveResultState"/>); nếu không
+        /// thì màn Loading và cả scene sau đó đều đứng im.
+        /// </summary>
+        private void EnterResultState(bool playerWon)
+        {
+            AudioManager.PlayMatchResult(playerWon);
+
+            frozeMatch = true;
+            Time.timeScale = 0f;
+        }
+
+        /// <summary>Rời trạng thái Win/Lose: chạy lại thời gian bình thường (chỉ làm nếu chính popup này đã đóng băng).</summary>
+        private void LeaveResultState()
+        {
+            if (!frozeMatch) return;
+
+            Time.timeScale = 1f;
+            frozeMatch = false;
+        }
+
+        /// <summary>Đóng popup thì LUÔN trả lại thời gian chạy, kể cả khi bị ẩn bằng đường khác ngoài nút hành động.</summary>
+        public override void Hide()
+        {
+            LeaveResultState();
+            base.Hide();
         }
 
         /// <summary>Về lại màn chọn level: load MainMenu rồi mở sẵn dialog chọn level ở scene mới.</summary>

@@ -128,6 +128,9 @@ public class Slinger : Slime
 
     public virtual void AttackAnimationFinished()
     {
+        // CLIENT chỉ để NHÌN: animation đánh ở máy client do UnitReplicaAnimation bật, đạn thì HOST bắn.
+        if (!CanApplyAttackEffects) return;
+
         FireBullet();
     }
 

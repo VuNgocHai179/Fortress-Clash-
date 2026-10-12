@@ -173,6 +173,50 @@ public class NetworkGame : NetworkBehaviour
         }
     }
 
+    /// <summary>
+    /// Người chơi cục bộ vừa bấm 1 KỸ NĂNG CHỦ ĐỘNG. Host thì thực thi luôn, client thì gửi yêu cầu lên
+    /// host - giống hệt cách mua lính và nâng thành đi qua đây, nhờ vậy tiền và sát thương chỉ được tính
+    /// MỘT LẦN ở máy chủ.
+    ///
+    /// Chỉ số kỹ năng đi qua mạng chứ không phải cả bộ thông số: 2 máy chạy cùng một scene nên bộ số chỉnh
+    /// trong Inspector của AbilityBar là giống nhau, host tự tra bộ số của mình (xem
+    /// <c>GameManager.GetAbilitySpec</c>).
+    /// </summary>
+    public void RequestAbility(bool casterBlueSide, int abilityIndex)
+    {
+        if (!IsSpawned)
+        {
+            // Chưa vào mạng (chơi đơn / chưa spawn xong): chạy thẳng đường chơi đơn.
+            GameManager.Instance?.ExecuteAbility(casterBlueSide, (ActiveAbilityType)abilityIndex);
+            return;
+        }
+
+        if (IsServer)
+        {
+            GameManager.Instance?.ExecuteAbility(casterBlueSide, (ActiveAbilityType)abilityIndex);
+        }
+        else
+        {
+            RequestAbilityRpc(casterBlueSide, abilityIndex);
+        }
+    }
+
+    /// <summary>
+    /// Host công bố một kỹ năng VỪA ĐƯỢC DÙNG cho client: máy client bắt đầu hồi chiêu đúng như host rồi
+    /// chạy hình ảnh/âm thanh (xem <c>GameManager.ApplyRemoteAbilityCast</c>).
+    ///
+    /// Vì sao phải gửi cả hồi chiêu: nếu client tự tính hồi chiêu theo lúc nó bấm thì máy nào cũng đúng,
+    /// nhưng khi host TỪ CHỐI (hết tiền, sân đầy, không có mục tiêu) client sẽ hồi chiêu oan. Gửi từ host thì
+    /// chỉ những lần kỹ năng thực sự có tác dụng mới tính.
+    /// </summary>
+    /// <param name="meteorCenter">Điểm rơi thiên thạch (host chọn mục tiêu) - chỉ có ý nghĩa với kỹ năng Thiên thạch.</param>
+    public void PublishAbilityCast(bool casterBlueSide, int abilityIndex, Vector3 meteorCenter, float cooldownSeconds)
+    {
+        if (!IsAuthority) return;
+
+        AbilityCastRpc(casterBlueSide, abilityIndex, meteorCenter, cooldownSeconds);
+    }
+
     // =========================================================
     // RPC
     // =========================================================
@@ -189,6 +233,23 @@ public class NetworkGame : NetworkBehaviour
     private void RequestUpgradeRpc(bool blueSide)
     {
         GameManager.Instance?.HandleLocalUpgrade(blueSide);
+    }
+
+    /// <summary>
+    /// Client xin host dùng 1 kỹ năng cho phe mình. Host mới là bên kiểm tra tiền / hồi chiêu / mục tiêu rồi
+    /// thực thi và công bố kết quả ngược lại (xem <see cref="PublishAbilityCast"/>).
+    /// </summary>
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void RequestAbilityRpc(bool casterBlueSide, int abilityIndex)
+    {
+        GameManager.Instance?.ExecuteAbility(casterBlueSide, (ActiveAbilityType)abilityIndex);
+    }
+
+    /// <summary>Host báo MỌI CLIENT một kỹ năng vừa được dùng (hồi chiêu + hình ảnh + âm thanh).</summary>
+    [Rpc(SendTo.NotServer)]
+    private void AbilityCastRpc(bool casterBlueSide, int abilityIndex, Vector3 meteorCenter, float cooldownSeconds)
+    {
+        GameManager.Instance?.ApplyRemoteAbilityCast(casterBlueSide, abilityIndex, meteorCenter, cooldownSeconds);
     }
 
     /// <summary>Host đẩy máu King sang MỌI CLIENT (host tự biết máu của mình rồi).</summary>

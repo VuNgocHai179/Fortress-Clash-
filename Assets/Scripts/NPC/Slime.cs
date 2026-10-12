@@ -91,6 +91,9 @@ public class Slime : MonoBehaviour
     [Tooltip("Số nhịp nhấp nháy cho mỗi lần trúng đòn (1 = nháy 1 cái, 2 = nháy 2 cái).")]
     public int damageFlashBlinks = 2;
 
+    [Tooltip("Màu sprite lúc nhấp nháy báo lính VỪA NHẬN BUFF (kỹ năng Hiệu triệu giảm sát thương nhận vào).")]
+    public Color buffFlashColor = new Color(0.35f, 0.85f, 1f, 1f);
+
     protected Tween moveTween;
     protected Tween idleTween;          // hiệu ứng "thở" lúc đứng yên chờ (xem UpdateIdleAnimation)
     protected bool isMoving = false;
@@ -110,6 +113,20 @@ public class Slime : MonoBehaviour
     protected virtual bool ReplicatedFromHost
     {
         get { return true; }
+    }
+
+    /// <summary>
+    /// Sự kiện animation ĐÁNH có được phép gây hậu quả gameplay (trừ máu địch, bắn đạn) hay không.
+    ///
+    /// CHỈ HOST và chế độ chơi đơn được gây hậu quả. Ở CLIENT, lính là bản sao chỉ để hiển thị, animation
+    /// đánh ở đó cũng chỉ để NHÌN (xem <c>UnitReplicaAnimation</c> - nó tự bật/tắt animator cho bản sao).
+    /// Sự kiện animation nằm trong clip đánh và gọi vào <c>AttackAnimationFinished</c> của từng lớp lính,
+    /// nên mỗi hàm đó phải tự kiểm tra cờ này - không thì client tự trừ máu địch và tự sinh đạn, lệch hẳn
+    /// so với host.
+    /// </summary>
+    protected bool CanApplyAttackEffects
+    {
+        get { return NetworkRole.Simulates; }
     }
 
     protected virtual void Awake()
@@ -343,18 +360,78 @@ public class Slime : MonoBehaviour
     /// PHẢI gọi ở CUỐI Start() của class con: các class con (BaseSlime, Catapult...) gán lại
     /// health/damage của prefab trong Start() nên nếu cộng sớm hơn thì giá trị sẽ bị ghi đè.
     /// Lính đã ra trận trước đó không bị ảnh hưởng (chỉ lính spawn sau mới được cộng).
+    ///
+    /// Hàm này CŨNG là chốt ghi nhận <see cref="MaxHealth"/> nên phải chạy được cả khi phe không nhận
+    /// nâng cấp thành (ví dụ King) - vì vậy không return sớm.
     /// </summary>
     protected virtual void ApplyCastleUpgrade()
     {
-        if (!ReceivesCastleUpgrade) return;
+        bool receive = ReceivesCastleUpgrade && GameManager.Instance != null;
+        CastleUpgrade castle = receive ? GameManager.Instance.CastleFor(blueSide) : null;
 
-        if (GameManager.Instance == null) return;
+        if (castle != null && castle.CurrentLevel > 0)
+        {
+            health = Mathf.RoundToInt(health * castle.HealthMultiplier);
+            damage = Mathf.RoundToInt(damage * castle.DamageMultiplier);
+        }
 
-        CastleUpgrade castle = GameManager.Instance.CastleFor(blueSide);
-        if (castle == null || castle.CurrentLevel <= 0) return;
+        MaxHealth = health;
+    }
 
-        health = Mathf.RoundToInt(health * castle.HealthMultiplier);
-        damage = Mathf.RoundToInt(damage * castle.DamageMultiplier);
+    // ==========================================
+    // MÁU TỐI ĐA
+    // ==========================================
+
+    /// <summary>
+    /// Máu TỐI ĐA của lính, ghi nhận lúc khởi tạo (sau khi đã cộng nâng cấp thành).
+    /// Dùng để <see cref="Heal"/> không hồi quá trần. 0 = chưa biết (chưa qua ApplyCastleUpgrade).
+    /// </summary>
+    public int MaxHealth { get; private set; }
+
+    /// <summary>Hệ số SÁT THƯƠNG NHẬN VÀO (1 = bình thường, 0.5 = chỉ nhận nửa đòn) - xem <see cref="ApplyDamageReduction"/>.</summary>
+    private float damageTakenMultiplier = 1f;
+
+    /// <summary>Thời điểm (Time.time) hết hạn của <see cref="damageTakenMultiplier"/>. 0 = không có buff.</summary>
+    private float damageTakenMultiplierUntil;
+
+    /// <summary>Lính này có đang được giảm sát thương nhận vào (buff Hiệu triệu còn hiệu lực) không.</summary>
+    public bool HasDamageReduction => damageTakenMultiplier < 1f && Time.time < damageTakenMultiplierUntil;
+
+    /// <summary>
+    /// Hồi <paramref name="amount"/> máu nhưng KHÔNG vượt quá <see cref="MaxHealth"/> (chưa biết máu tối
+    /// đa thì hồi không giới hạn). Lính đã chết (health &lt;= 0) thì bỏ qua - không hồi sinh.
+    /// </summary>
+    public void Heal(int amount)
+    {
+        if (amount <= 0 || health <= 0) return;
+
+        int healed = health + amount;
+        health = (MaxHealth > 0) ? Mathf.Min(healed, MaxHealth) : healed;
+    }
+
+    /// <summary>
+    /// Kỹ năng HIỆU TRIỆU: giảm sát thương lính này nhận vào trong <paramref name="duration"/> giây.
+    ///
+    /// Không cần "hoàn tác" khi hết hạn: hệ số chỉ được đọc trong <see cref="TakeDamage"/> và tự vô hiệu
+    /// khi quá thời điểm <c>Until</c>, nên lính bị huỷ giữa chừng cũng không để lại trạng thái sai.
+    /// </summary>
+    /// <param name="multiplier">1 = không giảm, 0.5 = chỉ nhận nửa sát thương. Bị kẹp trong [0,1].</param>
+    /// <param name="duration">Số giây hiệu lực.</param>
+    public void ApplyDamageReduction(float multiplier, float duration)
+    {
+        if (duration <= 0f) return;
+
+        damageTakenMultiplier = Mathf.Clamp01(Mathf.Min(damageTakenMultiplier, multiplier));
+
+        // Gia hạn: buff mới dài hơn phần còn lại của buff cũ thì lấy mốc mới.
+        float until = Time.time + duration;
+        if (until > damageTakenMultiplierUntil) damageTakenMultiplierUntil = until;
+
+        PlayFlash(buffFlashColor, Mathf.Max(1, damageFlashBlinks), damageFlashDuration);
+
+        // VFX BÁM THEO suốt thời gian buff (xem SlimeBuffAura): nhấp nháy lúc cast chỉ báo được KHOẢNH KHẮC
+        // đầu, còn mấy giây sau đó người chơi cần nhìn ra con nào đang được giảm sát thương.
+        VfxManager.PlayBuffAura(this);
     }
 
     protected virtual void Start()
@@ -903,12 +980,27 @@ public class Slime : MonoBehaviour
 
     public virtual void TakeDamage(int dmg)
     {
-        health -= dmg;
+        health -= ApplyIncomingDamageModifiers(dmg);
         PlayDamageFlash();
         if (health <= 0)
         {
             Die();
         }
+    }
+
+    /// <summary>
+    /// Áp các hệ số lên SÁT THƯƠNG NHẬN VÀO trước khi trừ máu. Hiện chỉ có buff giảm sát thương của kỹ
+    /// năng Hiệu triệu (<see cref="ApplyDamageReduction"/>).
+    ///
+    /// Đường nhanh khi không có buff (mặc định) trả về y nguyên <paramref name="dmg"/> nên lính bình
+    /// thường không bị đổi hành vi. Có buff thì luôn ăn ít nhất 1 sát thương để đòn đánh không bị vô hiệu.
+    /// </summary>
+    protected int ApplyIncomingDamageModifiers(int dmg)
+    {
+        if (dmg <= 0) return dmg;
+        if (!HasDamageReduction) return dmg;
+
+        return Mathf.Max(1, Mathf.RoundToInt(dmg * damageTakenMultiplier));
     }
 
     // ==========================================
@@ -922,20 +1014,29 @@ public class Slime : MonoBehaviour
     /// </summary>
     protected void PlayDamageFlash()
     {
-        if (damageFlashBlinks <= 0 || damageFlashDuration <= 0f) return;
+        PlayFlash(damageFlashColor, damageFlashBlinks, damageFlashDuration);
+    }
+
+    /// <summary>
+    /// Nhấp nháy sprite theo một màu cho trước - dùng chung cho nhấp nháy đỏ khi trúng đòn và nhấp nháy
+    /// xanh khi nhận buff (<see cref="ApplyDamageReduction"/>). Luôn trả sprite về màu gốc khi xong.
+    /// </summary>
+    protected void PlayFlash(Color color, int blinks, float duration)
+    {
+        if (blinks <= 0 || duration <= 0f) return;
         if (!CacheDamageFlashRenderers()) return;
 
         if (damageFlashTween != null) damageFlashTween.Kill();
 
-        ApplyDamageFlashColor(0f);   // luôn bắt đầu từ màu gốc
+        ApplyFlashColor(color, 0f);   // luôn bắt đầu từ màu gốc
 
         Sequence flashSeq = DOTween.Sequence();
-        for (int i = 0; i < damageFlashBlinks; i++)
+        for (int i = 0; i < blinks; i++)
         {
-            flashSeq.AppendCallback(() => ApplyDamageFlashColor(1f));
-            flashSeq.AppendInterval(damageFlashDuration);
-            flashSeq.AppendCallback(() => ApplyDamageFlashColor(0f));
-            flashSeq.AppendInterval(damageFlashDuration * 0.5f);   // nghỉ ngắn trước nhịp sau
+            flashSeq.AppendCallback(() => ApplyFlashColor(color, 1f));
+            flashSeq.AppendInterval(duration);
+            flashSeq.AppendCallback(() => ApplyFlashColor(color, 0f));
+            flashSeq.AppendInterval(duration * 0.5f);   // nghỉ ngắn trước nhịp sau
         }
 
         damageFlashTween = flashSeq;
@@ -946,19 +1047,40 @@ public class Slime : MonoBehaviour
     {
         if (damageFlashRenderers != null) return damageFlashRenderers.Length > 0;
 
-        damageFlashRenderers = GetComponentsInChildren<SpriteRenderer>(true);
-        damageFlashBaseColors = new Color[damageFlashRenderers.Length];
+        // BỎ QUA các lớp của AURA BUFF (SlimeBuffAura): aura tự ghi màu/alpha mỗi frame, đưa vào danh sách
+        // nhấp nháy thì hai bên ghi đè màu của nhau -> hiệu ứng giật và sai màu.
+        SpriteRenderer[] all = GetComponentsInChildren<SpriteRenderer>(true);
 
-        for (int i = 0; i < damageFlashRenderers.Length; i++)
+        int kept = 0;
+        for (int i = 0; i < all.Length; i++)
         {
-            damageFlashBaseColors[i] = damageFlashRenderers[i].color;
+            if (IsFlashableRenderer(all[i])) kept++;
+        }
+
+        damageFlashRenderers = new SpriteRenderer[kept];
+        damageFlashBaseColors = new Color[kept];
+
+        int index = 0;
+        for (int i = 0; i < all.Length; i++)
+        {
+            if (!IsFlashableRenderer(all[i])) continue;
+
+            damageFlashRenderers[index] = all[i];
+            damageFlashBaseColors[index] = all[i].color;
+            index++;
         }
 
         return damageFlashRenderers.Length > 0;
     }
 
+    /// <summary>SpriteRenderer này có được phép nhấp nháy màu không (aura buff thì không - xem ở trên).</summary>
+    private static bool IsFlashableRenderer(SpriteRenderer renderer)
+    {
+        return renderer != null && renderer.GetComponent<SlimeBuffAuraRenderer>() == null;
+    }
+
     /// <summary>t = 0: màu gốc, t = 1: màu nhấp nháy.</summary>
-    private void ApplyDamageFlashColor(float t)
+    private void ApplyFlashColor(Color color, float t)
     {
         if (damageFlashRenderers == null) return;
 
@@ -967,7 +1089,7 @@ public class Slime : MonoBehaviour
             SpriteRenderer sr = damageFlashRenderers[i];
             if (sr == null) continue;   // unit có thể đã bị destroy giữa lúc nhấp nháy
 
-            sr.color = Color.Lerp(damageFlashBaseColors[i], damageFlashColor, t);
+            sr.color = Color.Lerp(damageFlashBaseColors[i], color, t);
         }
     }
 
@@ -1202,6 +1324,30 @@ public class Slime : MonoBehaviour
                 target = col.gameObject;
             }
         }
+    }
+
+    /// <summary>
+    /// Có ĐỊCH nào đang trong tầm đánh không - dùng ĐÚNG 2 phép kiểm tra của <see cref="FindTarget"/>
+    /// (<see cref="IsEnemyCollider"/> + <see cref="IsInAttackRange"/>) nhưng KHÔNG ghi vào <c>target</c>.
+    ///
+    /// Dùng cho CLIENT: ở đó lính là bản sao và component này đã bị tắt (xem <see cref="Awake"/>) nên không
+    /// tự tìm mục tiêu được, nhưng animation đánh vẫn phải chạy cho giống host - xem <c>UnitReplicaAnimation</c>.
+    ///
+    /// Tầm đánh lấy từ <c>attackRange</c> gắn sẵn trong prefab: mỗi lớp lính có ghi lại giá trị này trong
+    /// Start, nhưng ở client Start không chạy nên phải dựa vào số trong prefab (cả 2 nơi đang để cùng giá trị).
+    /// </summary>
+    public bool HasEnemyInAttackRange()
+    {
+        float searchMargin = Mathf.Max(attackRange, AttackGapRange + AttackGapTolerance);
+        Collider2D[] hits = OverlapAround(searchMargin);
+
+        foreach (Collider2D col in hits)
+        {
+            if (!IsEnemyCollider(col)) continue;
+            if (IsInAttackRange(col)) return true;
+        }
+
+        return false;
     }
 
     /// <summary>

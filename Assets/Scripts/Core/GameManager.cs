@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using FortressClash.Core;
 using FortressClash.UI;
 using UnityEngine;
@@ -42,56 +43,9 @@ public enum RedUnitType
     Catapult
 }
 
-/// <summary>
-/// Độ khó của MỘT level. Mỗi level là một trận mới nên các chỉ số này được áp lại từ đầu trận
-/// (xem <see cref="GameManager.Winner"/> / ApplyLevelDifficulty trong GameManager).
-///
-/// Bố cục gợi ý (xem ApplyLevelDifficulty + AI.ReadDifficulty):
-///   - Level 1 (người mới) : AI ra quân thưa, ít tiền, ít lính, gần như không khắc chế.
-///   - Level 2 (thường)    : AI ra quân vừa, đủ tiền, có khắc chế vừa phải.
-///   - Level 3 (khó)       : AI ra quân dày, nhiều tiền, khắc chế tối đa, King trâu hơn.
-/// </summary>
-[Serializable]
-public class LevelSettings
-{
-    [Tooltip("Level áp dụng (1 = level đầu tiên).")]
-    public int level = 1;
-
-    [Tooltip("Máu tối đa của King ĐỎ ở level này (0 = giữ nguyên máu ghi trong prefab King).")]
-    public int redKingHealth = 0;
-
-    [Tooltip("Tiền AI được cộng THÊM ngay khi bắt đầu trận (ngoài AIMoney khai báo ở trên).")]
-    public int aiStartMoneyBonus = 0;
-
-    [Tooltip("Tiền AI được cộng thêm mỗi giây (ngoài moneyPersecond và nâng cấp thành).")]
-    public int aiExtraMoneyPerSecond = 0;
-
-    [Header("Hồ sơ AI của level (cân bằng độ khó)")]
-    [Tooltip("Hệ số nhân thu nhập AI mỗi giây ở level này. < 1 = AI nghèo hơn (dễ hơn cho người mới), " +
-             "> 1 = AI giàu hơn. Nhân với moneyPersecond và thưởng nâng cấp thành đỏ.")]
-    [Min(0f)]
-    public float aiIncomeMultiplier = 1f;
-
-    [Tooltip("Số giây giữa 2 lần AI ra lính ở level này. Lớn hơn = AI ra quân thưa hơn, người chơi dễ thở hơn.")]
-    [Min(0.5f)]
-    public float aiSpawnInterval = 2f;
-
-    [Tooltip("Số lính tối đa AI giữ cùng lúc ở level này. Bị chặn trên bởi maxUnitsPerSide của scene.")]
-    [Min(1)]
-    public int aiUnitLimit = 8;
-
-    [Tooltip("0..1: mức khắc chế đội hình người chơi. 0 = chỉ giữ đội hình cân bằng (không đọc bài đối thủ), " +
-             "1 = khắc chế tối đa. Dùng để hạ độ khó AI mà không khiến nó chọn lính vô lý.")]
-    [Range(0f, 1f)]
-    public float aiCounterAwareness = 1f;
-
-    [Tooltip("AI có được cộng thêm tiền/giây khi đang ít lính hơn người chơi ở level này không (chống snowball).")]
-    public bool aiCatchUpEnabled = true;
-
-    [Tooltip("Trần tiền catch-up AI được cộng thêm mỗi giây ở level này.")]
-    [Min(0)]
-    public int aiCatchUpMaxBonus = 6;
-}
+// LUẬT CHƠI + ĐỘ KHÓ CỦA LEVEL giờ nằm ở Assets/Scripts/Level/LevelRules.cs (LevelSettings,
+// ActiveAbilityType). Tách ra file riêng vì mỗi level không chỉ khác độ khó AI mà
+// còn khác về luật chơi: lính được dùng, kỹ năng chủ động...
 
 public class GameManager : Singleton<GameManager>
 {
@@ -126,6 +80,21 @@ public class GameManager : Singleton<GameManager>
 
     /// <summary>Tiền mỗi giây cộng cho AI. Người chơi KHÔNG nhận tiền/giây nữa - xem AddMoneyPerSecond.</summary>
     [SerializeField] private int moneyPersecond = 10;
+
+    /// <summary>
+    /// Hệ số nhân NHỊP KIẾM TIỀN của CẢ 2 PHE (1 = giữ nguyên tốc độ cũ).
+    ///
+    /// VÌ SAO CẦN: cả 2 nguồn thu định kỳ đều chậm nên trận đấu ì ra lúc đầu - người chơi chỉ sống bằng
+    /// tiền King nhả (mỗi lượt cách nhau 8-10 giây, xem <c>KingSlime.GenerateResourceRoutine</c>) còn AI
+    /// nhận <see cref="moneyPersecond"/> mỗi giây. Tăng ô này là 2 bên ra lính sớm hơn, mau vào trận đánh.
+    ///
+    /// Áp cho CẢ 2 PHE với CÙNG một hệ số nên độ khó tương đối giữa 2 bên không đổi. KHÔNG áp cho những
+    /// khoản MỘT LẦN: tiền khởi đầu của level (playerStartMoneyBonus / aiStartMoneyBonus) và thưởng hạ
+    /// lính (killRewardPriceRatio) - chúng là khoản cộng thêm, không phải sản lượng.
+    /// </summary>
+    [Min(0f)]
+    [SerializeField] private float incomeMultiplier = 3f;
+
     [SerializeField] private float chooseDelay = 5f;
 
     /// <summary>Đã hết thời gian chờ chọn lính của phe XANH chưa.</summary>
@@ -164,6 +133,12 @@ public class GameManager : Singleton<GameManager>
     [Tooltip("Bảng độ khó theo level. Level không có trong bảng sẽ chơi với chỉ số mặc định của scene.")]
     [SerializeField] private LevelSettings[] levelSettings;
 
+    [Tooltip("Kỹ năng chủ động MỞ SẴN ở MultiPlayer. Trận 2 người không có hồ sơ level nên không đọc " +
+             "được LevelSettings.abilities; muốn tắt bớt kỹ năng thì bỏ mục ra khỏi danh sách này.\n" +
+             "ĐỂ TRỐNG = mở CẢ 3 kỹ năng (mặc định cho scene chưa có ô này).")]
+    [SerializeField] private ActiveAbilityType[] multiplayerAbilities =
+        { ActiveAbilityType.Meteor, ActiveAbilityType.Reinforce, ActiveAbilityType.Rally };
+
     [Tooltip("Tên dialog hiện kết quả thắng/thua (đăng ký trong DialogConfig).")]
     [SerializeField] private string resultDialogName = DlgResult.DialogName;
 
@@ -173,6 +148,12 @@ public class GameManager : Singleton<GameManager>
 
     /// <summary>Trận này đã có King chết chưa - chặn xử lý thắng/thua 2 lần cho cùng 1 trận.</summary>
     private bool matchOver;
+
+    /// <summary>
+    /// Trận đã có kết quả chưa. Dùng cho các hệ thống chạy nền để thôi tác động lên trận đấu sau khi King
+    /// đã chết - lúc đó popup kết quả đang hiện nhưng game vẫn chạy tiếp.
+    /// </summary>
+    public bool IsMatchOver => matchOver;
 
     /// <summary>Tiền/giây cộng thêm cho AI theo độ khó của level đang chơi.</summary>
     private int levelAIBonusPerSecond;
@@ -204,7 +185,105 @@ public class GameManager : Singleton<GameManager>
     /// <summary>Hồ sơ độ khó của level đang chơi; null nếu level không có trong bảng (dùng mặc định của scene).</summary>
     public LevelSettings ActiveLevelSettings { get; private set; }
 
-    /// <summary>Tiền mỗi giây của AI, đã cộng thưởng nâng cấp thành phe đỏ và hệ số thu nhập của level.</summary>
+    // ==========================================
+    // LUẬT CHƠI CỦA LEVEL (xem Assets/Scripts/Level/LevelRules.cs)
+    //
+    // Đây là phần khiến 2 level khác nhau về CÁCH CHƠI chứ không chỉ khác độ khó AI. Mọi thứ đọc từ
+    // ActiveLevelSettings; level không có hồ sơ (hoặc đang chơi MultiPlayer) trả về giá trị mặc định
+    // đúng như game chạy trước đây, nên scene MultiPlayer không bị ảnh hưởng.
+    // ==========================================
+
+    /// <summary>
+    /// Kỹ năng chủ động <paramref name="ability"/> có được mở ở trận đang chơi không.
+    ///
+    /// Chơi đơn: do hồ sơ level quyết định (level 1 không mở kỹ năng nào, level 3 mở cả 3).
+    /// MultiPlayer: trận 2 người không có hồ sơ level nên đọc <see cref="multiplayerAbilities"/>; danh
+    /// sách để trống nghĩa là mở CẢ 3, để scene lưu từ trước (chưa có ô này) vẫn có đủ kỹ năng.
+    /// </summary>
+    public bool IsAbilityEnabled(ActiveAbilityType ability)
+    {
+        if (NetworkRole.IsMultiplayer) return IsMultiplayerAbilityEnabled(ability);
+
+        return ActiveLevelSettings != null && ActiveLevelSettings.IsAbilityEnabled(ability);
+    }
+
+    /// <summary>Kỹ năng có nằm trong danh sách mở của MultiPlayer không (danh sách trống = mở cả 3).</summary>
+    private bool IsMultiplayerAbilityEnabled(ActiveAbilityType ability)
+    {
+        if (multiplayerAbilities == null || multiplayerAbilities.Length == 0) return true;
+
+        for (int i = 0; i < multiplayerAbilities.Length; i++)
+        {
+            if (multiplayerAbilities[i] == ability) return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Người chơi có được dùng loại lính <paramref name="unit"/> ở level này không (danh sách trắng rỗng = tất cả).</summary>
+    public bool IsPlayerUnitAllowed(int unit)
+    {
+        return ActiveLevelSettings == null || ActiveLevelSettings.IsPlayerUnitAllowed(unit);
+    }
+
+    /// <summary>AI có được dùng loại lính <paramref name="unit"/> ở level này không (danh sách trắng rỗng = tất cả).</summary>
+    public bool IsAIUnitAllowed(int unit)
+    {
+        return ActiveLevelSettings == null || ActiveLevelSettings.IsAIUnitAllowed(unit);
+    }
+
+    /// <summary>
+    /// Level này CÓ giới hạn bộ lính của AI không. AI dùng cờ này để biết có cần lọc đơn giá trước khi
+    /// đưa thế trận cho <see cref="AIPolicy"/> hay không (lọc thì phải sao chép mảng giá, xem AI.Tick).
+    /// </summary>
+    public bool HasAIUnitRestriction
+    {
+        get
+        {
+            LevelSettings settings = ActiveLevelSettings;
+            if (settings == null) return false;
+            if (settings.aiUnitWhitelist == null || settings.aiUnitWhitelist.Length == 0) return false;
+
+            return settings.aiUnitWhitelist.Length < AIPolicy.UnitCount;
+        }
+    }
+
+    /// <summary>
+    /// Trần số lính của NGƯỜI CHƠI ở level này. playerUnitLimit = 0 (mặc định) thì dùng
+    /// <see cref="maxUnitsPerSide"/> của scene như trước.
+    /// </summary>
+    public int PlayerUnitLimit
+    {
+        get
+        {
+            if (ActiveLevelSettings == null) return maxUnitsPerSide;
+            if (ActiveLevelSettings.playerUnitLimit <= 0) return maxUnitsPerSide;
+
+            return Mathf.Clamp(ActiveLevelSettings.playerUnitLimit, 1, maxUnitsPerSide);
+        }
+    }
+
+    /// <summary>
+    /// Hệ số nhân tiền KING XANH (phe người chơi) nhả ra ở level này (0 = 1 = không đổi).
+    ///
+    /// Đây là nút chính để cân lại kinh tế của NGƯỜI CHƠI: trong chơi đơn người chơi KHÔNG có tiền/giây
+    /// như AI (xem AddMoneyPerSecond) mà chỉ sống bằng tiền King nhả + thưởng hạ lính, nên khi AI ra quân
+    /// dày hơn thì phải nâng hệ số này lên mới theo kịp.
+    ///
+    /// Chỉ áp cho King XANH - xem <c>KingSlime.CurrentResourcePerTick</c>. King đỏ giữ nguyên vì kinh tế
+    /// của AI đã có <see cref="LevelSettings.aiIncomeMultiplier"/> và aiExtraMoneyPerSecond.
+    /// </summary>
+    public float PlayerKingIncomeMultiplier
+    {
+        get
+        {
+            float multiplier = (ActiveLevelSettings != null) ? ActiveLevelSettings.playerKingIncomeMultiplier : 0f;
+            return (multiplier > 0f) ? multiplier : 1f;
+        }
+    }
+
+    /// <summary>Tiền mỗi giây của AI, đã cộng thưởng nâng cấp thành phe đỏ, hệ số thu nhập của level và
+    /// hệ số nhịp độ trận (<see cref="IncomeMultiplier"/> - áp cho cả 2 phe).</summary>
     public int AIMoneyPerSecond
     {
         get
@@ -212,9 +291,30 @@ public class GameManager : Singleton<GameManager>
             float castleMultiplier = (RedCastle != null) ? RedCastle.IncomeMultiplier : 1f;
             float levelMultiplier = (ActiveLevelSettings != null) ? Mathf.Max(0f, ActiveLevelSettings.aiIncomeMultiplier) : 1f;
 
-            return Mathf.RoundToInt(moneyPersecond * castleMultiplier * levelMultiplier);
+            return Mathf.RoundToInt(moneyPersecond * castleMultiplier * levelMultiplier * IncomeMultiplier);
         }
     }
+
+    /// <summary>
+    /// Hệ số thu nhập đang áp cho CẢ 2 PHE - đọc bởi <see cref="AIMoneyPerSecond"/> (thu nhập mỗi giây
+    /// của AI) và <c>KingSlime.CurrentResourcePerTick</c> (tiền King nhả ra, cả King xanh lẫn King đỏ).
+    ///
+    /// Đặt 0 hoặc số âm trong Inspector thì coi như 1: hệ số này là "chỉnh cho nhanh/chậm", không phải
+    /// công tắc tắt kinh tế - tắt kinh tế sẽ làm trận đấu không thể kết thúc.
+    /// </summary>
+    public float IncomeMultiplier => (incomeMultiplier > 0f) ? incomeMultiplier : 1f;
+
+    [Header("AI để dành tiền nâng cấp thành")]
+    [Tooltip("Bật để phe ĐỎ để dành tiền cho lần nâng cấp thành kế tiếp thay vì tiêu hết vào lính.\n" +
+             "Việc NÂNG vẫn do chính thành ĐỎ làm (CastleUpgrade.autoUpgrade) - ô này chỉ quyết định AI có " +
+             "GIỮ LẠI tiền hay không, nhờ vậy tiền mới tích được tới mức nâng.")]
+    public bool aiSavesForCastleUpgrade = true;
+
+    [Tooltip("Chỉ bắt đầu để dành khi phe ĐỎ đã có ít nhất chừng này lính trên sân. Đầu trận sân còn trống " +
+             "thì nó vẫn ra quân giữ tuyến như cũ, chỉ tích tiền khi đã có đội hình.\n" +
+             "Đặt 0 = để dành ngay từ đầu (AI sẽ đứng yên chờ đủ tiền nâng ở đầu trận - coi chừng bị đè).")]
+    [Min(0)]
+    public int aiCastleUpgradeSaveFromUnits = 3;
 
     [Header("AI Catch-up (bù khi AI bị dẫn quân)")]
     [Tooltip("Bật để AI được cộng thêm tiền mỗi giây khi số lính ít hơn người chơi, tránh bị snowball.")]
@@ -232,8 +332,11 @@ public class GameManager : Singleton<GameManager>
     [Min(1)]
     public int maxUnitsPerSide = 8;
 
-    /// <summary>Người chơi đã đạt giới hạn số lính chưa (UI dùng để làm xám nút chọn lính).</summary>
-    public bool IsPlayerAtUnitLimit => CountAll(GetPlayerUnitCounts()) >= maxUnitsPerSide;
+    /// <summary>
+    /// Người chơi đã đạt giới hạn số lính chưa (UI dùng để làm xám nút chọn lính).
+    /// Trần lấy theo luật chơi của level - xem <see cref="PlayerUnitLimit"/>.
+    /// </summary>
+    public bool IsPlayerAtUnitLimit => CountAll(GetPlayerUnitCounts()) >= PlayerUnitLimit;
 
     /// <summary>
     /// Số lính đang THỰC SỰ sống trên sân của 1 phe (đếm trực tiếp, không dùng bộ đếm cache).
@@ -258,8 +361,20 @@ public class GameManager : Singleton<GameManager>
     /// <summary>
     /// NGƯỜI CHƠI CỤC BỘ đã đạt giới hạn số lính chưa. Khác <see cref="IsPlayerAtUnitLimit"/> ở chỗ
     /// biết phe của người chơi cục bộ (client là phe đỏ) và đếm trực tiếp trên sân.
+    /// Trần lấy theo luật chơi của level: phe xanh dùng <see cref="PlayerUnitLimit"/>,
+    /// phe đỏ dùng <see cref="AIUnitLimit"/>.
     /// </summary>
-    public bool IsLocalAtUnitLimit => CountLiveUnits(LocalPlayerIsBlue) >= maxUnitsPerSide;
+    public bool IsLocalAtUnitLimit => CountLiveUnits(LocalPlayerIsBlue) >= LocalUnitLimit;
+
+    /// <summary>Trần số lính của PHE NGƯỜI CHƠI CỤC BỘ (xanh = người chơi, đỏ = AI/người chơi 2).</summary>
+    public int LocalUnitLimit => UnitLimitFor(LocalPlayerIsBlue);
+
+    /// <summary>
+    /// Trần số lính của một phe: xanh dùng <see cref="PlayerUnitLimit"/> (luật chơi của level), đỏ dùng
+    /// <see cref="AIUnitLimit"/>. Kỹ năng TĂNG VIỆN ở MultiPlayer gọi lính cho phe nào thì phải so với trần
+    /// của chính phe đó.
+    /// </summary>
+    public int UnitLimitFor(bool blueSide) => blueSide ? PlayerUnitLimit : AIUnitLimit;
 
     [Header("Thưởng khi hạ lính đối phương")]
     [Tooltip("Bật để NGƯỜI CHƠI được cộng tiền mỗi khi hạ được 1 lính ĐỎ. " +
@@ -279,6 +394,40 @@ public class GameManager : Singleton<GameManager>
 
     /// <summary>AI đã đạt giới hạn số lính chưa (theo hồ sơ độ khó của level).</summary>
     public bool IsAIAtUnitLimit => CountAll(GetOwnUnitCounts()) >= AIUnitLimit;
+
+    /// <summary>
+    /// Số tiền AI phải GIỮ LẠI (không được tiêu vào lính) cho lần nâng cấp thành kế tiếp.
+    ///
+    /// Vì sao cần: bộ não của AI mua lính ngay khi đủ tiền loại rẻ nhất (xem AIPolicy), nên tiền không bao
+    /// giờ tích đủ cho một lần nâng thành - thành ĐỎ gần như không bao giờ lên cấp. Trừ khoản để dành này
+    /// khỏi số tiền mà AI "nhìn thấy" khi quyết định khiến nó thôi tiêu hết, và thành tự nâng khi tích đủ
+    /// (CastleUpgrade.autoUpgrade + autoUpgradeSurplus).
+    ///
+    /// Trả về 0 - tức AI được tiêu hết như trước giờ - khi: tính năng tắt, không có thành ĐỎ, thành đã tối
+    /// đa, thành không bật tự nâng, bảng giá nâng cấp thiếu, hoặc phe ĐỎ chưa đủ lính để dám buông việc mua
+    /// quân (xem aiCastleUpgradeSaveFromUnits).
+    /// </summary>
+    public int AICastleUpgradeReserve
+    {
+        get
+        {
+            if (!aiSavesForCastleUpgrade) return 0;
+
+            CastleUpgrade castle = RedCastle;
+            if (castle == null || castle.IsMaxLevel) return 0;
+            if (!castle.autoUpgrade) return 0;   // thành không tự nâng thì giữ tiền lại cũng vô ích
+
+            int cost = castle.NextUpgradeCost;
+            if (cost == int.MaxValue) return 0;   // thiếu cấu hình giá nâng cấp
+
+            // Chưa đủ lính thì ưu tiên giữ tuyến: không để dành gì, mua quân như bình thường.
+            if (CountLiveUnits(false) < aiCastleUpgradeSaveFromUnits) return 0;
+
+            // Giữ đúng giá nâng cấp + khoản dư của thành, khớp với điều kiện thành tự nâng - nhờ vậy khi AI
+            // tích đủ là thành nâng được NGAY ở nhịp kiểm tra kế tiếp (autoUpgradeInterval).
+            return cost + Mathf.Max(0, castle.autoUpgradeSurplus);
+        }
+    }
 
     /// <summary>Đơn giá 6 loại lính đỏ, theo thứ tự <see cref="AIUnitType"/> (lấy trực tiếp từ prefab).</summary>
     private int[] unitPrices;
@@ -419,6 +568,11 @@ public class GameManager : Singleton<GameManager>
         AI.Money = AIMoney;
         levelAIBonusPerSecond = Mathf.Max(0, settings.aiExtraMoneyPerSecond);
 
+        // LUẬT CHƠI CỦA LEVEL: tiền khởi đầu cộng thêm cho NGƯỜI CHƠI (0 = như cũ). Đi qua ChangeMoney
+        // như mọi thay đổi tiền khác để UI và (nếu có) mạng luôn khớp.
+        int playerBonus = Mathf.Max(0, settings.playerStartMoneyBonus);
+        if (playerBonus > 0) ChangeMoney(true, playerBonus);
+
         if (settings.redKingHealth > 0)
         {
             // King đỏ chính là "thành" của AI. SetLevelHealth ghi cả máu hiện tại lẫn máu tối đa nên
@@ -432,6 +586,8 @@ public class GameManager : Singleton<GameManager>
                   $"thu nhập x{settings.aiIncomeMultiplier:0.##}, ra lính mỗi {settings.aiSpawnInterval:0.##}s, " +
                   $"trần lính {settings.aiUnitLimit}, khắc chế x{settings.aiCounterAwareness:0.##}, " +
                   $"catch-up {(settings.aiCatchUpEnabled ? $"+{settings.aiCatchUpMaxBonus}/s" : "TẮT")}.");
+
+        LogLevelRules(settings, playerBonus);
     }
 
     /// <summary>Độ khó cấu hình cho 1 level; null nếu level đó không có trong bảng.</summary>
@@ -445,6 +601,54 @@ public class GameManager : Singleton<GameManager>
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Log phần LUẬT CHƠI riêng của level (lính nào được dùng, kỹ năng nào mở, trần lính
+    /// của người chơi, hệ số tiền King nhả). Chỉ để đọc cho dễ khi test - không đụng tới gameplay.
+    /// </summary>
+    private void LogLevelRules(LevelSettings settings, int playerBonus)
+    {
+        if (settings == null) return;
+
+        string abilities = FormatAbilityList(settings.abilities);
+
+        Debug.Log($"Gameplay: luật chơi level {settings.level} - " +
+                  $"lính người chơi [{FormatUnitList(settings.playerUnitWhitelist)}], " +
+                  $"lính AI [{FormatUnitList(settings.aiUnitWhitelist)}], " +
+                  $"kỹ năng [{(abilities.Length == 0 ? "không có" : abilities)}], " +
+                  $"tiền khởi đầu người chơi +{playerBonus}, " +
+                  $"trần lính người chơi {PlayerUnitLimit}, hệ số tiền King xanh x{PlayerKingIncomeMultiplier:0.##}.");
+    }
+
+    /// <summary>Tên các loại lính trong danh sách trắng (danh sách rỗng = cho phép cả 6 loại).</summary>
+    private static string FormatUnitList(AIUnitType[] whitelist)
+    {
+        if (whitelist == null || whitelist.Length == 0) return "cả 6 loại";
+
+        string text = "";
+        for (int i = 0; i < whitelist.Length; i++)
+        {
+            if (text.Length > 0) text += ", ";
+            text += whitelist[i];
+        }
+
+        return text;
+    }
+
+    /// <summary>Tên các kỹ năng chủ động được mở (rỗng = không có kỹ năng nào).</summary>
+    private static string FormatAbilityList(ActiveAbilityType[] abilities)
+    {
+        if (abilities == null || abilities.Length == 0) return "";
+
+        string text = "";
+        for (int i = 0; i < abilities.Length; i++)
+        {
+            if (text.Length > 0) text += ", ";
+            text += abilities[i];
+        }
+
+        return text;
     }
 
     private IEnumerator AddMoneyPerSecond()
@@ -1031,34 +1235,62 @@ public class GameManager : Singleton<GameManager>
         else VfxManager.PlayLoseLeaves(position);
     }
 
-    /// <summary>Ra 1 lính xanh. Trả về true nếu thực sự ra được lính (đủ tiền + hết cooldown + chưa đầy).</summary>
+    /// <summary>Ra 1 lính xanh (trừ tiền + có thời gian chờ). Trả về true nếu thực sự ra được lính.</summary>
     private bool spawnSoldier(GameObject spawn)
     {
+        return SpawnBlueUnit(spawn, true) != null;
+    }
+
+    /// <summary>
+    /// Ra 1 lính xanh tại <see cref="SpawnSlime"/> rồi cho nó đi về phía King đỏ. Trả về lính vừa ra,
+    /// hoặc null nếu không ra được.
+    ///
+    /// <paramref name="chargeMoney"/> = true : đường MUA LÍNH thường (trừ tiền + bắt đầu thời gian chờ).
+    /// = false : dùng cho kỹ năng TĂNG VIỆN - tiền đã thu ở chính kỹ năng và người chơi không phải chờ
+    /// cooldown chọn lính, nhưng vẫn tôn trọng trần lính của level.
+    ///
+    /// Đây cũng là chốt chặn LUẬT CHƠI CỦA LEVEL: loại lính không có trong danh sách trắng của level
+    /// thì không ra được, dù đi đường nào (nút HUD, hay yêu cầu gửi từ client qua mạng).
+    /// </summary>
+    private GameObject SpawnBlueUnit(GameObject spawn, bool chargeMoney)
+    {
+        if (spawn == null) return null;
+
         if (IsPlayerAtUnitLimit)
         {
-            Debug.Log($"Đã đủ {maxUnitsPerSide} lính trên sân, phải chờ lính chết mới ra thêm được!");
-            return false;
+            Debug.Log($"Đã đủ {PlayerUnitLimit} lính trên sân, phải chờ lính chết mới ra thêm được!");
+            return null;
         }
-
-        if (!CanChoose(true)) return false;
 
         Slime slimePrefab = spawn.GetComponent<Slime>();
         if (slimePrefab == null)
         {
             Debug.LogError($"{spawn.name} không có component Slime!");
-            return false;
+            return null;
+        }
+
+        int unitType = GetUnitTypeIndex(slimePrefab);
+        if (!IsPlayerUnitAllowed(unitType))
+        {
+            Debug.Log($"Level này không cho dùng {(AIUnitType)unitType}!");
+            return null;
         }
 
         if (SpawnSlime == null)
         {
             Debug.LogError("GameManager: chưa gán SpawnSlime (điểm ra lính xanh) trong Inspector!");
-            return false;
+            return null;
         }
 
-        int price = slimePrefab.price;
-        if (!HasEnoughMoney(true, price)) return false;
+        if (chargeMoney)
+        {
+            if (!CanChoose(true)) return null;
 
-        ChangeMoney(true, -price);
+            int price = slimePrefab.price;
+            if (!HasEnoughMoney(true, price)) return null;
+
+            ChangeMoney(true, -price);
+        }
 
         Vector3 spawnPos = SpawnSlime.position;
 
@@ -1075,9 +1307,10 @@ public class GameManager : Singleton<GameManager>
         // MultiPlayer: phải đăng ký lính với Netcode thì client mới thấy được (chơi đơn: no-op).
         NetworkRole.SpawnIfServer(spawnedObject);
 
-        StartCoroutine(ChooseCooldown(true));   // bắt đầu thời gian chờ ngay khi vừa ra lính
+        // Chỉ đường mua lính mới bắt đầu thời gian chờ (tăng viện không chiếm nhịp chọn lính).
+        if (chargeMoney) StartCoroutine(ChooseCooldown(true));
 
-        return true;
+        return spawnedObject;
     }
 
     /// <summary>Ra 1 lính đỏ. Trả về true nếu thực sự ra được lính (đủ tiền + chưa đầy).</summary>
@@ -1264,6 +1497,517 @@ public class GameManager : Singleton<GameManager>
             case RedUnitType.SpearMan: AI.SpearManNumber++; break;
             case RedUnitType.BaseSlime: AI.RedBaseSlimeNumber++; break;
             case RedUnitType.Catapult: AI.CatapultNumber++; break;
+        }
+    }
+
+    /// <summary>Đếm thêm 1 lính XANH vừa ra sân vào bộ đếm của phe xanh.</summary>
+    private void IncreaseBlueUnitCount(int unitType)
+    {
+        switch ((AIUnitType)unitType)
+        {
+            case AIUnitType.Sword: player.SwordNumber++; break;
+            case AIUnitType.Archer: player.ArcherNumber++; break;
+            case AIUnitType.Slinger: player.SlingerNumber++; break;
+            case AIUnitType.SpearMan: player.SpearManNumber++; break;
+            case AIUnitType.BaseSlime: player.BaseSlimeNumber++; break;
+            case AIUnitType.Catapult: player.CatapultNumber++; break;
+        }
+    }
+
+    // ==========================================
+    // LUẬT CHƠI CỦA LEVEL: KỸ NĂNG CHỦ ĐỘNG
+    //
+    // Kỹ năng chủ động do component AbilityBar (Assets/Scripts/Level/AbilityBar.cs) điều khiển.
+    //
+    // GameManager chỉ mở API cho component đó gọi, nhờ vậy LUẬT CHƠI và CÁCH SINH LÍNH nằm cùng một
+    // chỗ (không để mỗi component tự Instantiate lính theo cách riêng rồi lệch với luồng còn lại).
+    // ==========================================
+
+    /// <summary>
+    /// Gom các lính ĐANG SỐNG của 1 phe (KHÔNG tính King) vào <paramref name="results"/> - dùng cho kỹ
+    /// năng chủ động (thiên thạch cần tìm lính đỏ, hiệu triệu cần tìm lính xanh).
+    /// Truyền sẵn list để không cấp phát mảng mới mỗi lần bấm kỹ năng.
+    /// </summary>
+    public void CollectLiveUnits(bool blueSide, List<Slime> results)
+    {
+        if (results == null) return;
+
+        results.Clear();
+
+        foreach (Slime slime in FindObjectsByType<Slime>(FindObjectsSortMode.None))
+        {
+            if (slime == null || slime is KingSlime) continue;
+            if (slime.blueSide != blueSide) continue;
+            if (GetUnitTypeIndex(slime) < 0) continue;
+
+            results.Add(slime);
+        }
+    }
+
+    /// <summary>Buffer dùng lại cho <see cref="ApplyAreaDamage"/> - tránh cấp phát danh sách mới mỗi lần thiên thạch nổ.</summary>
+    private readonly List<Slime> areaDamageBuffer = new List<Slime>();
+
+    /// <summary>
+    /// Gây <paramref name="damage"/> lên MỌI lính thuộc phe <paramref name="targetBlueSide"/> đang đứng trong
+    /// bán kính <paramref name="radius"/> quanh <paramref name="center"/> (kỹ năng Thiên thạch - xem
+    /// <see cref="AbilityBar"/> và <see cref="MeteorStrike"/>).
+    ///
+    /// Danh sách lính được ĐỌC LẠI ngay tại lúc gọi chứ không dùng danh sách chụp từ lúc bấm nút: đợt thiên
+    /// thạch rơi mất vài phần mười giây mới chạm đất, nên lính đi vào vùng nổ trong lúc đó vẫn ăn đòn, còn
+    /// lính chạy ra ngoài thì thoát - nhìn khớp với cảnh tượng trên sân.
+    /// </summary>
+    /// <param name="targetBlueSide">
+    /// Phe ĂN ĐÒN: true = lính xanh, false = lính đỏ. Chơi đơn luôn là false (người chơi phe xanh chỉ có
+    /// thể ném thiên thạch vào phe đỏ), còn MultiPlayer thì phe đỏ cũng có kỹ năng nên phải nói rõ.
+    /// </param>
+    /// <returns>Số lính thực sự bị trừ máu.</returns>
+    public int ApplyAreaDamage(bool targetBlueSide, Vector3 center, float radius, int damage)
+    {
+        if (damage <= 0 || radius <= 0f) return 0;
+
+        CollectLiveUnits(targetBlueSide, areaDamageBuffer);
+
+        float radiusSqr = radius * radius;
+        int hitCount = 0;
+
+        for (int i = 0; i < areaDamageBuffer.Count; i++)
+        {
+            Slime enemy = areaDamageBuffer[i];
+            if (enemy == null) continue;
+            if ((enemy.transform.position - center).sqrMagnitude > radiusSqr) continue;
+
+            enemy.TakeDamage(damage);
+            hitCount++;
+        }
+
+        Debug.Log($"Thiên thạch: {damage} sát thương lên {hitCount} lính {(targetBlueSide ? "xanh" : "đỏ")} " +
+                  $"quanh ({center.x:0.#}, {center.y:0.#}).");
+
+        return hitCount;
+    }
+
+    /// <summary>
+    /// Kỹ năng TĂNG VIỆN: gọi ngay <paramref name="count"/> lính của phe <paramref name="blueSide"/>, KHÔNG
+    /// trừ tiền (GameManager đã thu tiền của kỹ năng, xem <see cref="TryUseAbility"/>) và KHÔNG chiếm nhịp
+    /// chọn lính.
+    ///
+    /// Tôn trọng trần lính của phe đó nên gọi lúc sân đầy sẽ không ra được lính nào - phía gọi PHẢI kiểm
+    /// tra trần trước khi thu tiền (xem <see cref="TryUseAbility"/>).
+    /// </summary>
+    /// <param name="blueSide">Phe được gọi thêm lính: true = xanh, false = đỏ (MultiPlayer).</param>
+    /// <param name="unitType">Loại lính theo <see cref="AIUnitType"/> (phe đỏ dùng đúng loại tương ứng).</param>
+    /// <returns>Số lính thực sự ra được.</returns>
+    public int SpawnReinforcement(bool blueSide, int unitType, int count)
+    {
+        if (count <= 0) return 0;
+
+        GameObject prefab = blueSide ? GetBluePrefab(unitType) : GetRedPrefab((RedUnitType)unitType);
+        if (prefab == null) return 0;
+
+        int spawned = 0;
+
+        for (int i = 0; i < count; i++)
+        {
+            // Đếm THẲNG trên sân chứ không dùng IsPlayerAtUnitLimit: bộ đếm cache chỉ được làm mới mỗi
+            // giây nên trong cùng một lần gọi sẽ ra quá trần (xem RecountUnitsOnField).
+            if (CountLiveUnits(blueSide) >= UnitLimitFor(blueSide)) break;
+
+            GameObject unit = SpawnReinforcementUnit(blueSide, prefab);
+            if (unit == null) break;
+
+            if (blueSide) IncreaseBlueUnitCount(unitType);
+            else IncreaseRedUnitCount((RedUnitType)unitType);
+
+            spawned++;
+        }
+
+        return spawned;
+    }
+
+    /// <summary>
+    /// Ra 1 lính cho kỹ năng TĂNG VIỆN, không trừ tiền và không bắt đầu nhịp chờ chọn lính. Dùng chung
+    /// <see cref="SpawnBlueUnit"/> (đã có sẵn luật danh sách trắng của level) cho phe xanh, còn phe đỏ thì
+    /// đi thẳng vào <see cref="InstantiateRedPrefab"/> - lính đỏ do AI mua cũng dùng đúng hàm đó nên hai
+    /// luồng luôn cấu hình lính giống nhau.
+    /// </summary>
+    private GameObject SpawnReinforcementUnit(bool blueSide, GameObject prefab)
+    {
+        if (blueSide) return SpawnBlueUnit(prefab, false);
+
+        GameObject spawned = InstantiateRedPrefab(prefab);
+        return (spawned != null) ? spawned : null;
+    }
+
+    // ==========================================
+    // THỰC THI KỸ NĂNG CHỦ ĐỘNG (chơi đơn + MultiPlayer)
+    //
+    // AbilityBar chỉ lo phần UI (nút bấm, giá, đếm ngược hồi chiêu). Mọi thứ ĐỔI CỤC DIỆN TRẬN ĐẤU - trừ
+    // tiền, gọi lính, gây sát thương, giảm sát thương - nằm ở đây, nhờ vậy chơi đơn và MultiPlayer dùng
+    // chung đúng một bộ luật, không lệch nhau theo thời gian.
+    //
+    // MULTIPLAYER: HOST là bên duy nhất THỰC THI. Máy client gửi yêu cầu qua NetworkGame; host kiểm tra
+    // tiền / hồi chiêu / mục tiêu rồi thực thi, sau đó công bố ngược lại cho client (hồi chiêu + hình ảnh +
+    // âm thanh). Nhờ vậy sát thương và tiền không bao giờ bị tính hai lần mà cả 2 máy vẫn thấy giống nhau.
+    //
+    // PHE: kỹ năng luôn được dùng CHO PHE CỦA NGƯỜI BẤM (host = xanh, client = đỏ) và đánh vào phe đối
+    // diện, nên mọi hàm dưới đây đều nhận phe của NGƯỜI DÙNG KỸ NĂNG.
+    // ==========================================
+
+    /// <summary>Số phe trong trận: 0 = xanh, 1 = đỏ (chỉ số của <see cref="abilityReadyAt"/>).</summary>
+    private const int AbilitySideCount = 2;
+
+    /// <summary>Thông số từng kỹ năng, do AbilityBar đăng ký lúc vào trận (xem <see cref="RegisterAbilitySpec"/>).</summary>
+    private readonly AbilitySpec[] abilitySpecs = new AbilitySpec[ActiveAbilities.Count];
+
+    /// <summary>Mốc <c>Time.time</c> kỹ năng hồi xong, theo [phe, kỹ năng]. 0 = dùng được ngay.</summary>
+    private readonly float[,] abilityReadyAt = new float[AbilitySideCount, ActiveAbilities.Count];
+
+    /// <summary>Buffer dùng lại khi kỹ năng phải quét lính ĐỊCH (thiên thạch nhắm tuyến đầu).</summary>
+    private readonly List<Slime> abilityEnemyBuffer = new List<Slime>();
+
+    /// <summary>Buffer dùng lại khi kỹ năng phải quét lính MÌNH (hiệu triệu).</summary>
+    private readonly List<Slime> abilityAllyBuffer = new List<Slime>();
+
+    /// <summary>
+    /// <see cref="AbilityBar"/> gọi lúc vào trận để đăng ký thông số kỹ năng (tiền, hồi chiêu, sát thương...).
+    ///
+    /// Vì sao cần bước đăng ký: bộ số vẫn được CHỈNH TRONG INSPECTOR của AbilityBar (chỗ người làm game
+    /// quen sửa), nhưng lúc chạy thì GameManager + Netcode mới là nơi thực thi và đồng bộ. Đăng ký một lần
+    /// ở Start nên không tốn gì; máy nào cũng đăng ký bộ số của CHÍNH NÓ (cùng một scene nên giống nhau).
+    /// </summary>
+    public void RegisterAbilitySpec(AbilitySpec spec)
+    {
+        if (spec == null) return;
+
+        int index = (int)spec.ability;
+        if (index < 0 || index >= abilitySpecs.Length)
+        {
+            Debug.LogWarning($"GameManager: kỹ năng '{spec.ability}' nằm ngoài khoảng hợp lệ, bỏ qua.");
+            return;
+        }
+
+        abilitySpecs[index] = spec;
+    }
+
+    /// <summary>Thông số của 1 kỹ năng; null nếu chưa ai đăng ký (AbilityBar chưa chạy hoặc kỹ năng lạ).</summary>
+    public AbilitySpec GetAbilitySpec(ActiveAbilityType ability)
+    {
+        int index = (int)ability;
+        if (index < 0 || index >= abilitySpecs.Length) return null;
+
+        return abilitySpecs[index];
+    }
+
+    /// <summary>
+    /// Còn bao nhiêu giây nữa kỹ năng mới dùng được cho phe <paramref name="blueSide"/> (0 = dùng được ngay).
+    /// UI đọc số này để làm mờ nút và chạy vòng đếm ngược.
+    /// </summary>
+    public float AbilityCooldownRemaining(bool blueSide, ActiveAbilityType ability)
+    {
+        int index = (int)ability;
+        if (index < 0 || index >= ActiveAbilities.Count) return 0f;
+
+        return Mathf.Max(0f, abilityReadyAt[blueSide ? 0 : 1, index] - Time.time);
+    }
+
+    /// <summary>
+    /// Người chơi cục bộ vừa bấm 1 kỹ năng (gọi từ <see cref="AbilityBar"/>).
+    ///
+    /// Chơi đơn và host: thực thi ngay tại đây và trả về kết quả thật.
+    /// Client trong MultiPlayer: chỉ GỬI YÊU CẦU lên host rồi trả về true - hồi chiêu và hình ảnh sẽ tới sau
+    /// theo gói tin của host (xem <see cref="ApplyRemoteAbilityCast"/>), nên máy client không tự trừ tiền
+    /// cũng không tự bắt đầu hồi chiêu.
+    /// </summary>
+    /// <param name="casterBlueSide">Phe của người bấm nút (host = xanh, client = đỏ).</param>
+    /// <param name="ability">Kỹ năng vừa bấm.</param>
+    /// <returns>true khi lệnh đã được nhận (client: đã gửi lên host).</returns>
+    public bool TryUseAbility(bool casterBlueSide, ActiveAbilityType ability)
+    {
+        NetworkGame net = NetworkGame.Instance;
+
+        // Chơi đơn (không có NetworkGame) hoặc host: cả hai đều thực thi ngay tại máy này.
+        if (net == null || !net.IsSpawned || net.IsServer) return ExecuteAbility(casterBlueSide, ability);
+
+        net.RequestAbility(casterBlueSide, (int)ability);
+        return true;
+    }
+
+    /// <summary>
+    /// HOST (hoặc chơi đơn) thực sự thực thi 1 kỹ năng: kiểm tra tiền + hồi chiêu, áp hiệu ứng, rồi mới trừ
+    /// tiền và bắt đầu hồi chiêu.
+    ///
+    /// Thứ tự kiểm tra cố ý như sau: chưa hồi xong / không đủ tiền thì bỏ qua NGAY, còn "kỹ năng này có tác
+    /// dụng gì không" thì kiểm tra bằng chính lúc áp dụng - có tác dụng rồi mới trừ tiền, nhờ vậy người chơi
+    /// không bao giờ mất tiền mà không có gì xảy ra (bấm thiên thạch lúc sân trống, tăng viện lúc đủ trần...).
+    /// </summary>
+    public bool ExecuteAbility(bool casterBlueSide, ActiveAbilityType ability)
+    {
+        if (NetworkRole.IsMultiplayer && !NetworkRole.IsHost) return false;
+        if (matchOver)
+        {
+            Debug.Log("Trận đã có kết quả, không dùng kỹ năng được nữa.");
+            return false;
+        }
+
+        AbilitySpec spec = GetAbilitySpec(ability);
+        if (spec == null)
+        {
+            Debug.LogWarning($"GameManager: chưa có thông số cho kỹ năng {ability} (AbilityBar chưa đăng ký).");
+            return false;
+        }
+
+        int side = casterBlueSide ? 0 : 1;
+        int index = (int)ability;
+
+        if (Time.time < abilityReadyAt[side, index])
+        {
+            Debug.Log($"{spec.DisplayName} đang hồi, còn {abilityReadyAt[side, index] - Time.time:0.#}s.");
+            return false;
+        }
+
+        int cost = Mathf.Max(0, spec.cost);
+        if (MoneyOf(casterBlueSide) < cost)
+        {
+            Debug.Log($"Không đủ tiền dùng {spec.DisplayName} (cần {cost}, " +
+                      $"phe {(casterBlueSide ? "xanh" : "đỏ")} đang có {MoneyOf(casterBlueSide)}).");
+            return false;
+        }
+
+        if (!ApplyAbilityEffect(casterBlueSide, spec, out Vector3 meteorCenter)) return false;
+
+        if (cost > 0) ChangeMoney(casterBlueSide, -cost);
+
+        float cooldown = Mathf.Max(0f, spec.cooldown);
+        abilityReadyAt[side, index] = Time.time + cooldown;
+
+        // Host công bố cho client: vừa để máy kia chạy hình ảnh/âm thanh, vừa để nó bắt đầu hồi chiêu đúng
+        // như máy này. Chơi đơn thì NetworkGame không tồn tại nên bước này bỏ qua.
+        if (NetworkRole.IsHost)
+        {
+            NetworkGame.Instance?.PublishAbilityCast(casterBlueSide, index, meteorCenter, cooldown);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Áp hiệu ứng THẬT của 1 kỹ năng (chỉ host / chơi đơn gọi). Trả về false nếu kỹ năng không có tác dụng
+    /// gì - lúc đó KHÔNG trừ tiền và KHÔNG bắt đầu hồi chiêu.
+    /// </summary>
+    /// <param name="meteorCenter">Điểm rơi của thiên thạch - cần gửi cho client để 2 máy nổ cùng một chỗ.</param>
+    private bool ApplyAbilityEffect(bool casterBlueSide, AbilitySpec spec, out Vector3 meteorCenter)
+    {
+        meteorCenter = Vector3.zero;
+
+        switch (spec.ability)
+        {
+            case ActiveAbilityType.Meteor: return CastMeteor(casterBlueSide, spec, out meteorCenter);
+            case ActiveAbilityType.Reinforce: return CallReinforcement(casterBlueSide, spec);
+            case ActiveAbilityType.Rally: return RaiseRally(casterBlueSide, spec);
+            default: return false;
+        }
+    }
+
+    /// <summary>
+    /// THIÊN THẠCH: nhắm vào con lính ĐỊCH ĐANG ĐI ĐẦU HÀNG (tuyến đầu phe địch) rồi gây sát thương lên mọi
+    /// lính địch trong bán kính.
+    ///
+    /// Cách chọn mục tiêu: lính XANH đi sang PHẢI còn lính ĐỎ đi sang TRÁI (xem <c>Slime.Start</c>) nên
+    /// "đầu hàng" của phe địch chính là con đã tiến sâu nhất về phía thành nhà - con nguy hiểm nhất. Trước
+    /// đây kỹ năng nhắm vào chỗ ĐÔNG lính nhất, nhưng như vậy có thể bỏ qua con đang áp sát thành trong khi
+    /// cả đám còn ở xa, nên đã đổi thành nhắm tuyến đầu.
+    ///
+    /// HÌNH ẢNH & THỜI ĐIỂM TRỪ MÁU: kỹ năng giao cho <see cref="MeteorStrike"/> một ĐỢT thiên thạch rơi từ
+    /// ngoài màn hình xuống vùng nổ, mỗi viên trừ máu một lần đúng lúc nó chạm đất - lúc đó hàm này đã chạy
+    /// xong, tiền và hồi chiêu vẫn tính ngay khi bấm như mọi kỹ năng khác.
+    /// </summary>
+    /// <returns>false khi không có lính địch nào trên sân - lúc đó kỹ năng không bị trừ tiền.</returns>
+    private bool CastMeteor(bool casterBlueSide, AbilitySpec spec, out Vector3 center)
+    {
+        center = Vector3.zero;
+
+        if (!ResolveMeteorTarget(casterBlueSide, out center))
+        {
+            Debug.Log("Thiên thạch: trên sân không có lính địch nào.");
+            return false;
+        }
+
+        float radius = Mathf.Max(0.5f, spec.radius);
+        int damage = Mathf.Max(1, spec.damage);
+
+        Debug.Log($"Thiên thạch: phe {(casterBlueSide ? "xanh" : "đỏ")} nhắm vào lính địch tuyến đầu ở " +
+                  $"({center.x:0.#}, {center.y:0.#}).");
+
+        PlayMeteorEffects(casterBlueSide, center, radius, damage, applyDamage: true);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Tìm điểm rơi cho thiên thạch: con lính ĐỊCH đi xa nhất về phía thành nhà (xem <see cref="CastMeteor"/>).
+    /// Lính xanh tiến sang phải nên tuyến đầu của phe xanh là x LỚN NHẤT; lính đỏ tiến sang trái nên tuyến
+    /// đầu phe đỏ là x NHỎ NHẤT.
+    /// </summary>
+    private bool ResolveMeteorTarget(bool casterBlueSide, out Vector3 center)
+    {
+        bool enemyBlueSide = !casterBlueSide;
+
+        CollectLiveUnits(enemyBlueSide, abilityEnemyBuffer);
+
+        center = Vector3.zero;
+        if (abilityEnemyBuffer.Count == 0) return false;
+
+        center = abilityEnemyBuffer[0].transform.position;
+
+        for (int i = 0; i < abilityEnemyBuffer.Count; i++)
+        {
+            Slime candidate = abilityEnemyBuffer[i];
+            if (candidate == null) continue;
+
+            Vector3 candidatePosition = candidate.transform.position;
+            bool farther = enemyBlueSide ? candidatePosition.x > center.x : candidatePosition.x < center.x;
+            if (farther) center = candidatePosition;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// HÌNH ẢNH + ÂM THANH của kỹ năng Thiên thạch. Dùng chung cho host và client: máy nào cũng thấy đúng
+    /// đợt thiên thạch ở đúng chỗ, nhưng chỉ máy có <paramref name="applyDamage"/> = true mới trừ máu.
+    /// </summary>
+    private void PlayMeteorEffects(bool casterBlueSide, Vector3 center, float radius, int damage, bool applyDamage)
+    {
+        // Chưa gán art thiên thạch thì PlayMeteorStrike trả về false và ta trừ máu ngay như trước - kỹ năng
+        // không bao giờ mất tiền mà lại không có gì xảy ra.
+        if (!VfxManager.PlayMeteorStrike(center, radius, damage, casterBlueSide, applyDamage))
+        {
+            VfxManager.PlayAbilityImpact(center);
+
+            if (applyDamage) ApplyAreaDamage(!casterBlueSide, center, radius, damage);
+        }
+
+        // Tiếng của nút btn_meteor. Phát ở ĐÂY (sau khi chắc chắn kỹ năng có tác dụng) chứ không phải lúc
+        // bấm nút, để bấm lúc đang hồi / không đủ tiền / sân không có lính địch thì không có tiếng.
+        AudioManager.PlayMeteor();
+    }
+
+    /// <summary>
+    /// TĂNG VIỆN: gọi thêm lính của CHÍNH PHE ĐANG BẤM, không tốn thời gian chờ mua lính.
+    /// Không ra được lính nào (sân đã đủ trần) thì coi như kỹ năng không có tác dụng -> không mất tiền.
+    /// </summary>
+    private bool CallReinforcement(bool casterBlueSide, AbilitySpec spec)
+    {
+        int limit = UnitLimitFor(casterBlueSide);
+        int freeSlots = limit - CountLiveUnits(casterBlueSide);
+
+        if (freeSlots <= 0)
+        {
+            Debug.Log($"Tăng viện: phe {(casterBlueSide ? "xanh" : "đỏ")} đã đủ {limit} lính, chờ lính chết rồi " +
+                      "hãy gọi.");
+            return false;
+        }
+
+        int count = Mathf.Clamp(Mathf.Max(1, spec.unitCount), 1, freeSlots);
+        int spawned = SpawnReinforcement(casterBlueSide, (int)spec.reinforceUnit, count);
+
+        if (spawned <= 0)
+        {
+            Debug.Log("Tăng viện: không gọi được lính nào (kiểm tra prefab lính và điểm ra quân trong scene).");
+            return false;
+        }
+
+        Debug.Log($"Tăng viện: phe {(casterBlueSide ? "xanh" : "đỏ")} gọi thêm {spawned} lính " +
+                  $"{spec.reinforceUnit}.");
+
+        // Tiếng của nút btn_reinfor_blue - chỉ phát khi thực sự gọi được lính (sân đầy thì không có tiếng).
+        AudioManager.PlaySummon();
+
+        return true;
+    }
+
+    /// <summary>
+    /// HIỆU TRIỆU: hồi đầy máu toàn bộ lính ĐANG SỐNG của phe bấm nút và giảm sát thương chúng nhận vào
+    /// trong vài giây. Không tính King (King vẫn đứng nguyên như cũ) - kỹ năng này dành cho ĐỘI HÌNH.
+    ///
+    /// Ở MultiPlayer: host áp buff thật, còn client nhận lệnh rồi áp ĐÚNG các lời gọi này lên bản sao của
+    /// lính (máy client không mô phỏng sát thương nên ở đó chỉ có tác dụng hiển thị: nhấp nháy + aura).
+    /// </summary>
+    private bool RaiseRally(bool casterBlueSide, AbilitySpec spec)
+    {
+        CollectLiveUnits(casterBlueSide, abilityAllyBuffer);
+
+        if (abilityAllyBuffer.Count == 0)
+        {
+            Debug.Log($"Hiệu triệu: trên sân không có lính {(casterBlueSide ? "xanh" : "đỏ")} nào.");
+            return false;
+        }
+
+        ApplyRallyBuff(casterBlueSide, spec);
+
+        return true;
+    }
+
+    /// <summary>Hồi đầy máu + giảm sát thương cho toàn bộ lính của 1 phe (dùng chung cho host và client).</summary>
+    private void ApplyRallyBuff(bool blueSide, AbilitySpec spec)
+    {
+        float reduction = Mathf.Clamp01(spec.damageReduction);
+        float duration = Mathf.Max(0.5f, spec.duration);
+
+        CollectLiveUnits(blueSide, abilityAllyBuffer);
+
+        int healedCount = 0;
+
+        foreach (Slime ally in abilityAllyBuffer)
+        {
+            if (ally == null) continue;
+
+            int healthBefore = ally.health;
+
+            // Hồi đầy: xin đúng bằng máu tối đa, Heal tự kẹp trần nên không lo hồi quá.
+            ally.Heal(Mathf.Max(1, ally.MaxHealth));
+            ally.ApplyDamageReduction(reduction, duration);
+
+            if (ally.health > healthBefore) healedCount++;
+        }
+
+        Debug.Log($"Hiệu triệu: {abilityAllyBuffer.Count} lính {(blueSide ? "xanh" : "đỏ")} được giảm sát " +
+                  $"thương x{reduction:0.##} trong {duration:0.#}s ({healedCount} lính được hồi máu).");
+    }
+
+    /// <summary>
+    /// Máy CLIENT nhận lệnh dùng kỹ năng do host công bố (xem <c>NetworkGame.AbilityCastRpc</c>): bắt đầu
+    /// hồi chiêu đúng như host rồi chạy phần HÌNH ẢNH + ÂM THANH.
+    ///
+    /// Không trừ tiền ở đây: số tiền đã do host chốt và tự chảy về qua NetworkVariable.
+    /// </summary>
+    public void ApplyRemoteAbilityCast(bool casterBlueSide, int abilityIndex, Vector3 meteorCenter,
+        float cooldownSeconds)
+    {
+        if (abilityIndex < 0 || abilityIndex >= ActiveAbilities.Count) return;
+
+        ActiveAbilityType ability = (ActiveAbilityType)abilityIndex;
+
+        abilityReadyAt[casterBlueSide ? 0 : 1, abilityIndex] = Time.time + Mathf.Max(0f, cooldownSeconds);
+
+        AbilitySpec spec = GetAbilitySpec(ability);
+        if (spec == null) return;
+
+        switch (ability)
+        {
+            case ActiveAbilityType.Meteor:
+                PlayMeteorEffects(casterBlueSide, meteorCenter, Mathf.Max(0.5f, spec.radius),
+                    Mathf.Max(1, spec.damage), applyDamage: false);
+                break;
+
+            case ActiveAbilityType.Reinforce:
+                // Lính mới do host sinh ra và đã tự đồng bộ sang; ở đây chỉ cần tiếng.
+                AudioManager.PlaySummon();
+                break;
+
+            case ActiveAbilityType.Rally:
+                ApplyRallyBuff(casterBlueSide, spec);
+                break;
         }
     }
 
