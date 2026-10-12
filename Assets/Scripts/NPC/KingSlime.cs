@@ -132,7 +132,7 @@ public class KingSlime : Slime
 
     /// <summary>
     /// Tiền King nhả ra mỗi lượt, được cộng thưởng theo level thành của ĐÚNG phe mình
-    /// (xanh = thành người chơi, đỏ = thành AI).
+    /// (xanh = thành người chơi, đỏ = thành AI) và nhân hệ số nhịp độ trận của GameManager.
     /// </summary>
     private int CurrentResourcePerTick
     {
@@ -141,7 +141,21 @@ public class KingSlime : Slime
             CastleUpgrade castle = (GameManager.Instance != null) ? GameManager.Instance.CastleFor(blueSide) : null;
             float multiplier = (castle != null) ? castle.IncomeMultiplier : 1f;
 
-            return Mathf.RoundToInt(resourcePerTick * multiplier);
+            // LUẬT CHƠI CỦA LEVEL: hệ số tiền King nhả CHỈ áp cho King XANH (phe người chơi).
+            //
+            // Trong chơi đơn, người chơi không có moneyPersecond như AI nên tiền King nhả + thưởng hạ lính
+            // là toàn bộ thu nhập; vì vậy đây là nút duy nhất để người chơi theo kịp số lính AI gọi ra.
+            // King ĐỎ cố ý để nguyên: kinh tế của AI đã chỉnh bằng aiIncomeMultiplier/aiExtraMoneyPerSecond
+            // và aiCatchUp, tăng thêm ở đây chỉ làm AI mạnh lên ngược lại ý muốn.
+            float levelMultiplier = (blueSide && GameManager.Instance != null)
+                ? GameManager.Instance.PlayerKingIncomeMultiplier
+                : 1f;
+
+            // NHỊP ĐỘ TRẬN: hệ số chung cho CẢ 2 King (xem GameManager.IncomeMultiplier) - cả 2 bên cùng
+            // được tăng nên trận đấu mau sôi động mà không nghiêng về phe nào.
+            float paceMultiplier = (GameManager.Instance != null) ? GameManager.Instance.IncomeMultiplier : 1f;
+
+            return Mathf.RoundToInt(resourcePerTick * multiplier * levelMultiplier * paceMultiplier);
         }
     }
 

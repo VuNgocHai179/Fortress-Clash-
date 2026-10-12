@@ -10,6 +10,9 @@ public enum VfxType
     WinPoof = 1,
     DeathSmoke = 2,
     LoseLeaves = 3,
+
+    /// <summary>Kỹ năng Thiên thạch rơi: phát tại điểm rơi (xem AbilityBar).</summary>
+    AbilityImpact = 4,
 }
 
 /// <summary>
@@ -18,11 +21,16 @@ public enum VfxType
 /// nên hệ thống TỰ NẠP lúc chạy - không cần gắn gì vào scene, dùng chung cho cả chơi đơn lẫn
 /// MultiPlayer.
 ///
-/// 4 sự kiện và hiệu ứng tương ứng:
-///   - <see cref="PlaySpawnFlash"/> : một lính vừa được sinh ra  -> CFXR Flash.
-///   - <see cref="PlayWinPoof"/>    : người chơi THẮNG            -> CFXR Magic Poof (giữa màn hình).
-///   - <see cref="PlayDeathSmoke"/> : một lính bị hạ gục          -> CFXR3 Hit Misc F Smoke.
-///   - <see cref="PlayLoseLeaves"/> : người chơi THUA             -> CFXR3 Hit Leaves A (Lit) (giữa màn hình).
+/// Các sự kiện và hiệu ứng tương ứng:
+///   - <see cref="PlaySpawnFlash"/>   : một lính vừa được sinh ra   -> CFXR Flash.
+///   - <see cref="PlayWinPoof"/>      : người chơi THẮNG            -> CFXR Magic Poof (giữa màn hình).
+///   - <see cref="PlayDeathSmoke"/>   : một lính bị hạ gục          -> CFXR3 Hit Misc F Smoke.
+///   - <see cref="PlayLoseLeaves"/>   : người chơi THUA             -> CFXR3 Hit Leaves A (Lit) (giữa màn hình).
+///   - <see cref="PlayAbilityImpact"/>: kỹ năng Thiên thạch rơi       -> prefab ở VfxConfig.abilityImpact.
+///   - <see cref="PlayMeteorStrike"/> : kỹ năng Thiên thạch           -> đợt thiên thạch rơi từ trên trời
+///     xuống (art ở VfxConfig.meteor.sprite), <see cref="MeteorStrike"/>; máu trừ lúc viên đầu chạm đất.
+///   - <see cref="PlayBuffAura"/>     : kỹ năng Hiệu triệu (buff)     -> aura VẼ BẰNG CODE bám theo lính,
+///     không dùng prefab nên không nằm trong VfxConfig - xem <see cref="SlimeBuffAura"/>.
 ///
 /// ĐỒNG BỘ MẠNG: lính do HOST sinh ra (client tắt component Slime nên không tự chạy hiệu ứng spawn/
 /// chết). Vì vậy <see cref="PlaySpawnFlash"/> và <see cref="PlayDeathSmoke"/> phát NGAY Ở MÁY NÀY rồi
@@ -64,13 +72,68 @@ public static class VfxManager
     /// <summary>Phát CFXR Magic Poof khi người chơi THẮNG (đặt ở giữa màn hình). Chỉ phát cục bộ.</summary>
     public static void PlayWinPoof(Vector3 worldPosition)
     {
-        PlayLocal(VfxType.WinPoof, worldPosition);
+        PlayResultEffect(VfxType.WinPoof, worldPosition);
     }
 
     /// <summary>Phát CFXR3 Hit Leaves A (Lit) khi người chơi THUA (đặt ở giữa màn hình). Chỉ phát cục bộ.</summary>
     public static void PlayLoseLeaves(Vector3 worldPosition)
     {
-        PlayLocal(VfxType.LoseLeaves, worldPosition);
+        PlayResultEffect(VfxType.LoseLeaves, worldPosition);
+    }
+
+    /// <summary>
+    /// Hiệu ứng WIN/LOSE: giống <see cref="PlayLocal"/> nhưng hạt chạy bằng THỜI GIAN KHÔNG BỊ ĐÓNG BĂNG.
+    ///
+    /// Lý do: khi popup kết quả hiện, <c>DlgResult</c> đặt <c>Time.timeScale = 0</c> để đóng băng trận.
+    /// Hạt dùng thời gian có scale sẽ đứng im ngay frame đầu (chưa kịp hiện gì) nên phải bật
+    /// <c>useUnscaledTime</c> cho đúng 2 hiệu ứng này - xem <see cref="UseUnscaledParticleTime"/>.
+    /// </summary>
+    private static void PlayResultEffect(VfxType type, Vector3 worldPosition)
+    {
+        GameObject prefab = GetPrefab(type);
+        if (prefab == null) return;
+
+        Spawn(prefab, worldPosition, useUnscaledTime: true);
+    }
+
+    /// <summary>
+    /// Phát hiệu ứng THIÊN THẠCH RƠI của kỹ năng chủ động tại điểm rơi (xem <c>GameManager</c>).
+    ///
+    /// Đây chỉ là phần HÌNH ẢNH: phía gọi nói rõ máy này có trừ máu hay không (xem
+    /// <paramref name="applyDamage"/>) nên hàm này dùng được cho cả host lẫn client trong MultiPlayer.
+    /// </summary>
+    /// <param name="casterIsBlue">Phe đã dùng kỹ năng - quyết định hướng rơi và chiều lật ảnh.</param>
+    /// <param name="applyDamage">true = trừ máu khi từng viên chạm đất (host / chơi đơn); false = chỉ hình ảnh.</param>
+    public static bool PlayMeteorStrike(Vector3 center, float radius, int damage, bool casterIsBlue = true,
+        bool applyDamage = true)
+    {
+        VfxConfig config = GetConfig();
+        VfxConfig.MeteorStrikeSettings settings = (config != null) ? config.meteor : null;
+
+        return MeteorStrike.Spawn(settings, center, radius, damage, casterIsBlue, applyDamage);
+    }
+
+    /// <summary>
+    /// Phát hiệu ứng NỔ của kỹ năng Thiên thạch (prefab CFXR ở <c>VfxConfig.abilityImpact</c>) tại điểm rơi.
+    /// Chỉ phát CỤC BỘ ở máy gọi: mỗi máy tự phát khi viên đầu chạm đất (xem <c>MeteorStrike</c>) nên không
+    /// cần đồng bộ qua mạng.
+    /// </summary>
+    public static void PlayAbilityImpact(Vector3 worldPosition)
+    {
+        PlayLocal(VfxType.AbilityImpact, worldPosition);
+    }
+
+    /// <summary>
+    /// Bật VFX AURA BÁM THEO cho một lính vừa nhận buff GIẢM SÁT THƯƠNG (kỹ năng Hiệu triệu - xem
+    /// <see cref="SlimeBuffAura"/>).
+    ///
+    /// Khác mọi hàm còn lại ở đây: hiệu ứng này KHÔNG phải prefab dùng-một-lần mà sống bám theo con lính
+    /// đúng bằng thời gian buff, nên nó được cài trong component <see cref="SlimeBuffAura"/> chứ không nằm
+    /// trong VfxConfig. Hàm này chỉ là cửa vào cho gọn - mọi hiệu ứng đều gọi qua VfxManager.
+    /// </summary>
+    public static void PlayBuffAura(Slime slime)
+    {
+        SlimeBuffAura.Attach(slime);
     }
 
     /// <summary>
@@ -134,6 +197,7 @@ public static class VfxManager
             case VfxType.WinPoof: return cfg.winPoof;
             case VfxType.DeathSmoke: return cfg.deathSmoke;
             case VfxType.LoseLeaves: return cfg.loseLeaves;
+            case VfxType.AbilityImpact: return cfg.abilityImpact;
             default: return null;
         }
     }
@@ -163,12 +227,38 @@ public static class VfxManager
     /// theo). Prefab CFXR tự huỷ khi chạy xong (CFXR_Effect.clearBehavior = Destroy); thêm lưới an
     /// toàn theo thời lượng hạt để prefab KHÁC (không phải CFXR) cũng không bị kẹt lại trên sân.
     /// </summary>
-    private static void Spawn(GameObject prefab, Vector3 worldPosition)
+    /// <param name="useUnscaledTime">
+    /// true = cho hạt chạy bằng thời gian không bị timeScale ảnh hưởng - dùng cho hiệu ứng WIN/LOSE
+    /// (lúc đó trận đã đóng băng, xem <see cref="PlayResultEffect"/>).
+    /// </param>
+    private static void Spawn(GameObject prefab, Vector3 worldPosition, bool useUnscaledTime = false)
     {
         GameObject instance = UnityEngine.Object.Instantiate(prefab, worldPosition, Quaternion.identity);
         if (instance == null) return;
 
+        if (useUnscaledTime) UseUnscaledParticleTime(instance);
+
         UnityEngine.Object.Destroy(instance, EstimateLifetime(instance));
+    }
+
+    /// <summary>
+    /// Cho MỌI ParticleSystem của một hiệu ứng chạy bằng thời gian KHÔNG bị timeScale ảnh hưởng, rồi
+    /// phát lại từ đầu: đổi cờ unscaled giữa chừng không ăn với những hạt đã sinh ra nên phải
+    /// <c>Stop</c> + <c>Play</c> lại (vừa Instantiate nên chưa mất gì).
+    /// </summary>
+    private static void UseUnscaledParticleTime(GameObject instance)
+    {
+        foreach (ParticleSystem particles in instance.GetComponentsInChildren<ParticleSystem>(true))
+        {
+            if (particles == null) continue;
+
+            // Phải gán qua struct MainModule thì giá trị mới được ghi ngược vào hệ hạt.
+            ParticleSystem.MainModule main = particles.main;
+            main.useUnscaledTime = true;
+
+            particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            particles.Play();
+        }
     }
 
     /// <summary>

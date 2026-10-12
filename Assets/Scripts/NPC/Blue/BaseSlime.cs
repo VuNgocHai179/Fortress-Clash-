@@ -71,6 +71,9 @@ public class BaseSlime : Slime
 
     public virtual void AttackAnimationFinished()
     {
+        // CLIENT chỉ để NHÌN: animation đánh ở máy client do UnitReplicaAnimation bật, sát thương thì HOST chốt.
+        if (!CanApplyAttackEffects) return;
+
         if (target != null && IsValidTarget(target))
         {
             Slime enemy = target.GetComponent<Slime>();

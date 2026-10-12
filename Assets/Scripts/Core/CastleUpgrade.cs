@@ -12,7 +12,8 @@ using UnityEngine;
 ///     2. Lính MỚI SPAWN sau khi nâng có thêm MÁU và SÁT THƯƠNG.
 /// - Lính đã ra trận KHÔNG đổi chỉ số; chỉ lính spawn sau mới được cộng.
 /// - Thành NGƯỜI CHƠI (xanh) đọc/trừ tiền của người chơi và nâng bằng nút UI.
-///   Thành AI (đỏ) đọc/trừ tiền của AI và tự nâng khi đủ tiền (xem <see cref="autoUpgrade"/>).
+///   Thành AI (đỏ) đọc/trừ tiền của AI và tự nâng khi đủ tiền (xem <see cref="autoUpgrade"/>) - CHỈ đúng
+///   ở chế độ chơi đơn: ở MultiPlayer phe đỏ là NGƯỜI CHƠI thứ hai nên thành đỏ nâng bằng nút như thành xanh.
 /// - Hình ảnh thành cũng đổi theo level: mỗi level có thể gắn 1 object riêng
 ///   (xem <see cref="levelVisuals"/>, ví dụ thành xanh: level 1 = upgrade_2, level 2 = magic_ring).
 /// </summary>
@@ -46,7 +47,8 @@ public class CastleUpgrade : MonoBehaviour
     public bool aiSide = false;
 
     [Header("Tự động nâng (dùng cho thành AI)")]
-    [Tooltip("Bật để thành tự nâng khi phe sở hữu đủ tiền. Thành người chơi nâng bằng nút nên để TẮT.")]
+    [Tooltip("Bật để thành tự nâng khi phe sở hữu đủ tiền. Thành người chơi nâng bằng nút nên để TẮT.\n" +
+             "MultiPlayer BỎ QUA ô này: phe đỏ ở đó là người chơi thứ hai, không phải AI (xem CastleUpgrade.Start).")]
     public bool autoUpgrade = false;
 
     [Tooltip("Số giây giữa 2 lần tự kiểm tra nâng cấp.")]
@@ -130,7 +132,13 @@ public class CastleUpgrade : MonoBehaviour
     /// <summary>Thành AI bật tự nâng thì chạy vòng lặp nâng cấp.</summary>
     private void Start()
     {
-        if (autoUpgrade) StartCoroutine(AutoUpgradeLoop());
+        // MultiPlayer: phe đỏ do NGƯỜI CHƠI thứ hai (client) điều khiển nên thành ĐỎ KHÔNG được tự nâng -
+        // nếu không thì người chơi không bấm gì mà thành vẫn lên cấp và tiền vẫn bị trừ (cả 2 máy đều bị:
+        // máy host trừ tiền của phe đỏ, máy client còn tự tăng level của mình rồi gửi tiền sai lên host).
+        // Ở MultiPlayer thành CHỈ nâng khi người chơi bấm nút - xem GameManager.UpgradeCastle (client gửi
+        // yêu cầu, host nâng rồi đồng bộ cấp về qua SetLevelFromNetwork). Giống cách AI.Start tự tắt mình
+        // khi vào trận 2 người.
+        if (autoUpgrade && !NetworkRole.IsMultiplayer) StartCoroutine(AutoUpgradeLoop());
     }
 
     /// <summary>

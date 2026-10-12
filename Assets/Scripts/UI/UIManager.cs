@@ -65,6 +65,18 @@ namespace FortressClash.Core
                  "Để trống thì nút giữ nguyên ảnh xanh đã gắn trong scene.")]
         [SerializeField] private Sprite redUpgradeButtonSprite;
 
+        [Tooltip("Ảnh nút kỹ năng TĂNG VIỆN của phe đỏ " +
+                 "(Assets/Textures/button/btn_reinfor_red.png).\n" +
+                 "Dùng ở MultiPlayer khi máy này là client - AbilityBar đổi ảnh nút lúc dựng dãy nút.\n" +
+                 "Để trống thì nút giữ nguyên ảnh xanh đã gắn trong scene.")]
+        [SerializeField] private Sprite redReinforceButtonSprite;
+
+        [Tooltip("Ảnh nút kỹ năng HIỆU TRIỆU của phe đỏ " +
+                 "(Assets/Textures/button/btn_bless_red.png).\n" +
+                 "Dùng ở MultiPlayer khi máy này là client - AbilityBar đổi ảnh nút lúc dựng dãy nút.\n" +
+                 "Để trống thì nút giữ nguyên ảnh xanh đã gắn trong scene.")]
+        [SerializeField] private Sprite redBlessButtonSprite;
+
         /// <summary>
         /// UIManager là UI của RIÊNG scene đang chạy (canvas HUD, thanh máu, nút chọn lính, dialog...),
         /// nên KHÔNG DontDestroyOnLoad: sang scene mới thì UIManager của scene đó tiếp quản và toàn bộ UI
@@ -166,19 +178,34 @@ namespace FortressClash.Core
 
         private void CheckButtonsInteractable(int currentMoney)
         {
-            // Nút chọn lính chỉ bấm được khi ĐỦ TIỀN, ĐÃ HẾT thời gian chờ (GameManager.chooseDelay)
-            // và CHƯA ĐẠT giới hạn số lính trên sân (GameManager.maxUnitsPerSide).
+            // Nút chọn lính chỉ bấm được khi ĐỦ TIỀN, ĐÃ HẾT thời gian chờ (GameManager.chooseDelay),
+            // CHƯA ĐẠT giới hạn số lính trên sân của level (GameManager.LocalUnitLimit) và LEVEL CÓ CHO
+            // PHÉP dùng loại lính đó (LevelSettings.playerUnitWhitelist - xem Assets/Scripts/Level/LevelRules.cs).
             // Ở MultiPlayer, "người chơi" là phe cục bộ (host = xanh, client = đỏ) nên dùng
             // IsLocalAtUnitLimit / LocalMoney thay vì các giá trị cứng của phe xanh.
-            bool canChoose = (GameManager.Instance == null)
-                || (GameManager.Instance.IsChooseReady && !GameManager.Instance.IsLocalAtUnitLimit);
+            GameManager gameManager = GameManager.Instance;
 
-            if (btnBaseSlime != null) btnBaseSlime.interactable = canChoose && (currentMoney >= priceBaseSlime);
-            if (btnSpear != null) btnSpear.interactable = canChoose && (currentMoney >= priceSpearMan);
-            if (btnArcher != null) btnArcher.interactable = canChoose && (currentMoney >= priceArcher);
-            if (btnSword != null) btnSword.interactable = canChoose && (currentMoney >= priceSword);
-            if (btnSlinger != null) btnSlinger.interactable = canChoose && (currentMoney >= priceSlinger);
-            if (btnCatapult != null) btnCatapult.interactable = canChoose && (currentMoney >= priceCatapult);
+            bool canChoose = (gameManager == null)
+                || (gameManager.IsChooseReady && !gameManager.IsLocalAtUnitLimit);
+
+            if (btnBaseSlime != null) btnBaseSlime.interactable = CanBuy(gameManager, canChoose, currentMoney, priceBaseSlime, AIUnitType.BaseSlime);
+            if (btnSpear != null) btnSpear.interactable = CanBuy(gameManager, canChoose, currentMoney, priceSpearMan, AIUnitType.SpearMan);
+            if (btnArcher != null) btnArcher.interactable = CanBuy(gameManager, canChoose, currentMoney, priceArcher, AIUnitType.Archer);
+            if (btnSword != null) btnSword.interactable = CanBuy(gameManager, canChoose, currentMoney, priceSword, AIUnitType.Sword);
+            if (btnSlinger != null) btnSlinger.interactable = CanBuy(gameManager, canChoose, currentMoney, priceSlinger, AIUnitType.Slinger);
+            if (btnCatapult != null) btnCatapult.interactable = CanBuy(gameManager, canChoose, currentMoney, priceCatapult, AIUnitType.Catapult);
+        }
+
+        /// <summary>
+        /// Một nút mua lính có bấm được không: hết thời gian chờ + đủ tiền + LUẬT CHƠI CỦA LEVEL cho phép
+        /// dùng loại lính đó (<see cref="GameManager.IsPlayerUnitAllowed"/>). Nút bị khoá vì luật của
+        /// level thì chỉ hiện xám chứ không bấm được - giống nút đang chờ/hết tiền.
+        /// </summary>
+        private static bool CanBuy(GameManager gameManager, bool canChoose, int currentMoney, int price, AIUnitType unit)
+        {
+            if (!canChoose || currentMoney < price) return false;
+
+            return gameManager == null || gameManager.IsPlayerUnitAllowed((int)unit);
         }
 
         // ==========================================
@@ -224,6 +251,28 @@ namespace FortressClash.Core
             if (background == null) background = button.GetComponent<Image>();
 
             if (background != null) background.sprite = sprite;
+        }
+
+        /// <summary>
+        /// Ảnh nút KỸ NĂNG CHỦ ĐỘNG theo PHE CỦA NGƯỜI CHƠI CỤC BỘ - để <see cref="AbilityBar"/> đổi ảnh
+        /// nút lúc dựng dãy nút (AbilityBar không tự biết art nào của phe nào, còn phần "ảnh nút theo phe"
+        /// là việc của UIManager - xem <see cref="ApplyLocalSideTheme"/> cho bộ nút mua lính).
+        ///
+        /// Trả về <c>null</c> khi là phe XANH (chơi đơn / host): lúc đó nút đã mang sẵn ảnh xanh gắn trong
+        /// scene nên không phải đổi gì. Máy client (phe đỏ) nhận ảnh đỏ; chỉ 2 kỹ năng có bản đỏ
+        /// (Tăng viện, Hiệu triệu) - Thiên thạch không có nên vẫn giữ ảnh xanh.
+        /// </summary>
+        public Sprite LocalSideAbilitySprite(ActiveAbilityType ability)
+        {
+            bool localIsBlue = (GameManager.Instance == null) || GameManager.Instance.LocalPlayerIsBlue;
+            if (localIsBlue) return null;
+
+            switch (ability)
+            {
+                case ActiveAbilityType.Reinforce: return redReinforceButtonSprite;
+                case ActiveAbilityType.Rally: return redBlessButtonSprite;
+                default: return null;
+            }
         }
 
         // Hàm cập nhật thanh máu cho King

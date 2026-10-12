@@ -172,6 +172,8 @@ public class AI : MonoBehaviour
         Debug.Log($"AI: bộ não {(IsUsingModel ? "MODEL ONNX" : "LUẬT (RuleBased)")}, " +
                   $"ra lính mỗi {CurrentSpawnInterval:0.##}s, khắc chế x{CurrentCounterAwareness:0.##}.");
 
+        // AI ra lính theo nhịp như từ trước tới giờ, ở mọi level. Nhịp này chỉnh bằng aiSpawnInterval
+        // trong LevelSettings (xem GameManager.ApplyLevelDifficulty).
         while (true)
         {
             yield return new WaitForSeconds(CurrentSpawnInterval);
@@ -181,9 +183,20 @@ public class AI : MonoBehaviour
 
     private void Tick()
     {
-        if (GameManager.Instance == null) return;
+        GameManager gameManager = GameManager.Instance;
+        if (gameManager == null) return;
 
-        AIState state = GameManager.Instance.GetAIState();
+        AIState state = gameManager.GetAIState();
+
+        // LUẬT CHƠI CỦA LEVEL: loại lính mà level cấm thì bộ não không được biết tới.
+        ApplyLevelUnitRestriction(ref state);
+
+        // AI ĐỂ DÀNH TIỀN NÂNG CẤP THÀNH: bộ não chỉ được tiêu phần tiền TRÊN khoản để dành, nhờ vậy tiền
+        // mới tích được tới mức nâng thành. Việc nâng do thành ĐỎ tự làm (xem GameManager.AICastleUpgradeReserve).
+        int realMoney = state.money;
+        int reserve = gameManager.AICastleUpgradeReserve;
+        state.money = Mathf.Max(0, realMoney - reserve);
+
         int unit = Decide(state);
         LastDecision = Describe(unit);
 
@@ -199,15 +212,47 @@ public class AI : MonoBehaviour
         {
             if (logDecisions)
             {
-                Debug.Log($"AI: đã đủ {GameManager.Instance.maxUnitsPerSide} lính trên sân => chờ.");
+                Debug.Log($"AI: đã đủ {gameManager.AIUnitLimit} lính trên sân => chờ.");
             }
 
             return;
         }
 
-        if (logDecisions) Debug.Log($"AI: {Describe(unit)} (tiền {state.money})");
+        if (logDecisions)
+        {
+            // Ghi cả tiền thật và khoản để dành: số bộ não nhìn thấy (state.money) đã bị trừ khoản để dành
+            // nên nếu chỉ in nó ra thì nhìn log sẽ tưởng AI bị mất tiền.
+            string saving = (reserve > 0) ? $", để dành {reserve} nâng thành (tiêu được {state.money})" : "";
+            Debug.Log($"AI: {Describe(unit)} (tiền {realMoney}{saving})");
+        }
 
         Spawn(unit);
+    }
+
+    /// <summary>
+    /// LUẬT CHƠI CỦA LEVEL: bộ não AI không được biết tới những loại lính mà level cấm phe đỏ dùng.
+    ///
+    /// Cách làm: đặt đơn giá của loại bị cấm thành <see cref="int.MaxValue"/> để <see cref="AIPolicy"/>
+    /// tự bỏ qua (nó coi giá đó là cấu hình lỗi và không bao giờ chọn). Nhờ vậy KHÔNG phải sửa AIPolicy
+    /// và dataset sinh từ AIPolicy vẫn dùng chung được, không cần sinh lại.
+    ///
+    /// PHẢI sao chép mảng giá trước khi sửa: GetAIState() trả về chính mảng UnitPrices đã cache của
+    /// GameManager, sửa thẳng vào đó là bịa giá cho cả phần tính tiền của AI.
+    /// </summary>
+    private static void ApplyLevelUnitRestriction(ref AIState state)
+    {
+        if (GameManager.Instance == null) return;
+        if (state.prices == null) return;
+        if (!GameManager.Instance.HasAIUnitRestriction) return;   // không bị cấm gì -> khỏi sao chép
+
+        int[] prices = (int[])state.prices.Clone();
+
+        for (int u = 0; u < AIPolicy.UnitCount; u++)
+        {
+            if (!GameManager.Instance.IsAIUnitAllowed(u)) prices[u] = int.MaxValue;
+        }
+
+        state.prices = prices;
     }
 
     /// <summary>Chọn hành động: ưu tiên model nếu bật và chạy được, ngược lại dùng bộ não luật.</summary>
@@ -313,6 +358,14 @@ public class AI : MonoBehaviour
         if (unit < 0) return;   // WAITING
 
         GameManager gm = GameManager.Instance;
+
+        // LUẬT CHƠI CỦA LEVEL: chốt chặn cuối - level cấm loại lính này thì không ra quân, dù bộ não
+        // (luật hay model ONNX) có chọn nhầm. Bình thường đã bị lọc từ ApplyLevelUnitRestriction.
+        if (gm != null && !gm.IsAIUnitAllowed(unit))
+        {
+            Debug.LogWarning($"AI: level này không cho phe đỏ dùng {(AIUnitType)unit} => bỏ qua quyết định.");
+            return;
+        }
 
         switch ((AIUnitType)unit)
         {

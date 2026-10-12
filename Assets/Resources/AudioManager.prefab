@@ -49,11 +49,17 @@ MonoBehaviour:
   bgmClip: {fileID: 8300000, guid: 02727c806c25d6341901723920ea992d, type: 3}
   cutsceneClip: {fileID: 8300000, guid: 3582dd9b85d286542848e05dfa9badca, type: 3}
   cutsceneSceneName: Cutscene
+  gameplayClip: {fileID: 8300000, guid: 626b7b7060b36dc458a0faac23f3fcfc, type: 3}
+  gameplaySceneNames:
+  - Gameplay
+  - MultiPlayer
   musicVolume: 0.5
   attackClip: {fileID: 8300000, guid: 76d89e2c1e8f16a4da2411320e2e0c2c, type: 3}
   buttonClickClip: {fileID: 8300000, guid: d742a125a5f7d0542a97338331d96a42, type: 3}
   loseClip: {fileID: 8300000, guid: e44e655c052d5a2459c143a8a2d85f2d, type: 3}
+  meteorClip: {fileID: 8300000, guid: a558310d1a366c04d902a85c9506ea23, type: 3}
   moveClip: {fileID: 0}
+  summonClip: {fileID: 8300000, guid: 85480f20906d46442b5258c23b4acd51, type: 3}
   upgradeClip: {fileID: 8300000, guid: 177fbb2137ba2024db13adf2f2f059ea, type: 3}
   winClip: {fileID: 8300000, guid: 2b4efde6699260744a8e0a0aa889c9d5, type: 3}
   sfxVolume: 1

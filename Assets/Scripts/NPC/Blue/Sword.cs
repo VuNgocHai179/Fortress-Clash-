@@ -97,6 +97,9 @@ public class Sword : Slime
     // NHỚ TẠO ANIMATION EVENT GỌI HÀM NÀY ĐỂ GÂY SÁT THƯƠNG
     public virtual void AttackAnimationFinished()
     {
+        // CLIENT chỉ để NHÌN: animation đánh ở máy client do UnitReplicaAnimation bật, sát thương thì HOST chốt.
+        if (!CanApplyAttackEffects) return;
+
         if (target != null && IsValidTarget(target))
         {
             Slime enemySlime = target.GetComponent<Slime>();
